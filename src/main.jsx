@@ -1,19 +1,12 @@
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-
+import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-
 import {
   ArrowRight,
   CalendarDays,
   Check,
+  ChevronDown,
   Clock3,
   Instagram,
-  Lock,
   MapPin,
   Menu,
   Phone,
@@ -24,89 +17,104 @@ import {
   X,
   Zap,
 } from "lucide-react";
-
 import { createClient } from "@supabase/supabase-js";
-
 import "./styles.css";
 
-/* =========================================================
-   CONFIG
-========================================================= */
-
-const SUPABASE_URL =
-  import.meta.env.VITE_SUPABASE_URL || "";
-
-const SUPABASE_KEY =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
-
-const WHATSAPP =
-  import.meta.env.VITE_WHATSAPP_NUMBER ||
-  "917046706848";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const WHATSAPP_NUMBER =
+  import.meta.env.VITE_WHATSAPP_NUMBER || "917046706848";
 
 const supabase =
   SUPABASE_URL && SUPABASE_KEY
     ? createClient(SUPABASE_URL, SUPABASE_KEY)
     : null;
 
-/* =========================================================
-   PRICING
-========================================================= */
-
 const DAY_RATE = 800;
 const NIGHT_RATE = 1100;
 
-/*
-  Arena timings:
-  06:00 AM → 12:00 AM
+const slots = Array.from({ length: 18 }, (_, i) => i + 6);
 
-  Starts:
-  06 → 23
-*/
+const hourLabel = (hour) => {
+  const suffix = hour >= 12 ? "PM" : "AM";
+  const h = hour % 12 || 12;
+  return `${h}:00 ${suffix}`;
+};
 
-const slots = Array.from(
-  { length: 18 },
-  (_, index) => index + 6
-);
+const safeHourLabel = (hour) => {
+  if (hour >= 24) return "12:00 AM";
+  return hourLabel(hour);
+};
+
+const priceForHour = (hour) =>
+  hour >= 17 ? NIGHT_RATE : DAY_RATE;
+
+const todayString = () => {
+  const d = new Date();
+  const offset = d.getTimezoneOffset();
+  return new Date(d.getTime() - offset * 60000)
+    .toISOString()
+    .split("T")[0];
+};
 
 /* =========================================================
-   HELPERS
+   CINEMATIC INTRO
 ========================================================= */
 
-function hourLabel(hour) {
-  const suffix = hour >= 12 ? "PM" : "AM";
-  const displayHour = hour % 12 || 12;
+function CinematicIntro({ onDone }) {
+  const [phase, setPhase] = useState(0);
 
-  return `${String(displayHour).padStart(
-    2,
-    "0"
-  )}:00 ${suffix}`;
-}
+  useEffect(() => {
+    const timers = [
+      setTimeout(() => setPhase(1), 400),
+      setTimeout(() => setPhase(2), 950),
+      setTimeout(() => setPhase(3), 1500),
+      setTimeout(() => setPhase(4), 2050),
+      setTimeout(() => setPhase(5), 2750),
+      setTimeout(onDone, 3450),
+    ];
 
-function safeHourLabel(hour) {
-  const normalized = hour >= 24 ? hour - 24 : hour;
+    return () => timers.forEach(clearTimeout);
+  }, [onDone]);
 
-  return hourLabel(normalized);
-}
+  return (
+    <div className={`cinematic-intro phase-${phase}`}>
+      <div className="intro-noise" />
+      <div className="intro-grid" />
 
-function slotLabel(hour, duration = 1) {
-  return `${hourLabel(hour)} — ${safeHourLabel(
-    hour + duration
-  )}`;
-}
+      <div className="intro-particles">
+        {Array.from({ length: 34 }).map((_, i) => (
+          <span key={i} style={{ "--i": i }} />
+        ))}
+      </div>
 
-function rateForHour(hour) {
-  return hour < 17 ? DAY_RATE : NIGHT_RATE;
-}
+      <div className="intro-ball">
+        <span className="intro-ball-seam" />
+      </div>
 
-function priceFor(hour, duration) {
-  return Array.from(
-    { length: duration },
-    (_, index) => rateForHour(hour + index)
-  ).reduce((total, rate) => total + rate, 0);
-}
+      <div className="intro-flash" />
 
-function isoDate(date) {
-  return date.toISOString().slice(0, 10);
+      <div className="intro-copy">
+        <div className="intro-word word-1">YOUR GAME.</div>
+        <div className="intro-word word-2">YOUR NIGHT.</div>
+        <div className="intro-word word-3">WORK HARD.</div>
+        <div className="intro-word word-4">PLAY HARDER.</div>
+        <div className="intro-word word-5">ONE PITCH.</div>
+        <div className="intro-word word-6">ENDLESS GAMES.</div>
+        <div className="intro-word word-7">NO EXCUSES.</div>
+        <div className="intro-word word-8">JUST PLAY.</div>
+
+        <div className="intro-final">
+          THIS IS <strong>RADHE.</strong>
+        </div>
+      </div>
+
+      <div className="intro-brand">
+        <strong>RADHE</strong>
+        <span>BOX CRICKET</span>
+      </div>
+    </div>
+  );
 }
 
 /* =========================================================
@@ -114,140 +122,112 @@ function isoDate(date) {
 ========================================================= */
 
 function CustomCursor() {
-  const [position, setPosition] = useState({
-    x: -100,
-    y: -100,
-  });
-
-  const [hover, setHover] = useState(false);
-  const [down, setDown] = useState(false);
-
   useEffect(() => {
-    const move = (event) => {
-      setPosition({
-        x: event.clientX,
-        y: event.clientY,
-      });
+    const cursor = document.querySelector(".custom-cursor");
+    if (!cursor) return;
 
-      const interactive =
-        event.target.closest(
-          "button, a, input, select, textarea, .slot, .dates button, .duration button"
-        );
-
-      setHover(Boolean(interactive));
+    const move = (e) => {
+      cursor.style.left = `${e.clientX}px`;
+      cursor.style.top = `${e.clientY}px`;
     };
 
-    const pointerDown = () => setDown(true);
-    const pointerUp = () => setDown(false);
+    const down = () => cursor.classList.add("cursor-down");
+    const up = () => cursor.classList.remove("cursor-down");
 
-    window.addEventListener(
-      "pointermove",
-      move,
-      { passive: true }
-    );
-
-    window.addEventListener(
-      "pointerdown",
-      pointerDown
-    );
-
-    window.addEventListener(
-      "pointerup",
-      pointerUp
-    );
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mousedown", down);
+    window.addEventListener("mouseup", up);
 
     return () => {
-      window.removeEventListener(
-        "pointermove",
-        move
-      );
-
-      window.removeEventListener(
-        "pointerdown",
-        pointerDown
-      );
-
-      window.removeEventListener(
-        "pointerup",
-        pointerUp
-      );
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mousedown", down);
+      window.removeEventListener("mouseup", up);
     };
   }, []);
 
   return (
-    <div
-      className={`custom-cursor ${
-        hover ? "is-hover" : ""
-      } ${down ? "is-down" : ""}`}
-      style={{
-        left: position.x,
-        top: position.y,
-      }}
-      aria-hidden="true"
-    >
-      <span className="cursor-ring" />
-
-      <span className="cursor-ball">
+    <div className="custom-cursor">
+      <div className="cursor-ring" />
+      <div className="cursor-ball">
         <i />
-      </span>
+      </div>
+      <span className="cursor-cross horizontal" />
+      <span className="cursor-cross vertical" />
     </div>
   );
 }
 
 /* =========================================================
-   CINEMATIC INTRO
+   LOGO
 ========================================================= */
 
-function CinematicIntro({ onDone }) {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onDone();
-    }, 2800);
+function Logo({ onSecret }) {
+  const [tapCount, setTapCount] = useState(0);
 
-    return () => clearTimeout(timer);
-  }, [onDone]);
+  const handleTap = () => {
+    const next = tapCount + 1;
+    setTapCount(next);
+
+    if (next >= 5) {
+      setTapCount(0);
+      onSecret();
+    }
+
+    setTimeout(() => setTapCount(0), 1800);
+  };
 
   return (
-    <div className="intro">
-      <div className="intro-grid" />
+    <button className="logo" onClick={handleTap}>
+      <span className="logo-mark">R</span>
+      <span>
+        <strong>RADHE</strong>
+        <small>BOX CRICKET</small>
+      </span>
+    </button>
+  );
+}
 
-      <div className="stadium-light light-a" />
-      <div className="stadium-light light-b" />
+/* =========================================================
+   NAVBAR
+========================================================= */
 
-      <div className="intro-noise" />
+function Navbar({ onSecret }) {
+  const [open, setOpen] = useState(false);
 
-      <div className="intro-top">
-        RADHE / ARENA 01
+  const go = (id) => {
+    setOpen(false);
+    document.getElementById(id)?.scrollIntoView({
+      behavior: "smooth",
+    });
+  };
+
+  return (
+    <nav className="navbar">
+      <Logo onSecret={onSecret} />
+
+      <div className={`nav-links ${open ? "open" : ""}`}>
+        <button onClick={() => go("home")}>HOME</button>
+        <button onClick={() => go("arena")}>ARENA</button>
+        <button onClick={() => go("booking")}>BOOK</button>
+        <button onClick={() => go("contact")}>CONTACT</button>
       </div>
 
-      <div className="intro-ball">
-        <i />
-      </div>
+      <button
+        className="nav-book"
+        onClick={() => go("booking")}
+      >
+        BOOK SLOT
+        <ArrowRight size={16} />
+      </button>
 
-      <div className="bat">
-        <span />
-      </div>
-
-      <div className="impact-flash" />
-
-      <div className="intro-center">
-        <div className="intro-brand">
-          RADHE
-        </div>
-
-        <div className="intro-sub">
-          BOX CRICKET
-        </div>
-      </div>
-
-      <div className="impact">
-        YOUR GAME. YOUR NIGHT.
-      </div>
-
-      <div className="intro-bottom">
-        AHMEDABAD • PRIVATE BOX CRICKET
-      </div>
-    </div>
+      <button
+        className="mobile-menu"
+        onClick={() => setOpen(!open)}
+        aria-label="Menu"
+      >
+        {open ? <X /> : <Menu />}
+      </button>
+    </nav>
   );
 }
 
@@ -259,174 +239,35 @@ function ScrollBall() {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    let ticking = false;
-
     const update = () => {
-      if (ticking) return;
+      const max =
+        document.documentElement.scrollHeight -
+        window.innerHeight;
 
-      ticking = true;
-
-      requestAnimationFrame(() => {
-        const max =
-          document.documentElement.scrollHeight -
-          window.innerHeight;
-
-        const value =
-          max > 0
-            ? window.scrollY / max
-            : 0;
-
-        setProgress(
-          Math.max(0, Math.min(1, value))
-        );
-
-        ticking = false;
-      });
+      setProgress(max > 0 ? window.scrollY / max : 0);
     };
 
-    window.addEventListener(
-      "scroll",
-      update,
-      { passive: true }
-    );
+    window.addEventListener("scroll", update, {
+      passive: true,
+    });
 
     update();
 
-    return () =>
-      window.removeEventListener(
-        "scroll",
-        update
-      );
+    return () => window.removeEventListener("scroll", update);
   }, []);
 
-  const left =
-    86 - progress * 70;
-
-  const top =
-    17 + progress * 72;
-
-  const rotation =
-    progress * 1800;
+  const style = {
+    left: `${88 - progress * 76}%`,
+    top: `${18 + progress * 65}%`,
+    transform: `translate(-50%, -50%) rotate(${
+      progress * 1800
+    }deg)`,
+  };
 
   return (
-    <div
-      className="scroll-ball"
-      style={{
-        left: `${left}%`,
-        top: `${top}%`,
-        transform: `rotate(${rotation}deg)`,
-      }}
-    >
-      <i />
+    <div className="scroll-ball" style={style}>
+      <span />
     </div>
-  );
-}
-
-/* =========================================================
-   LOGO / SECRET TRIGGER
-========================================================= */
-
-function Logo({ onSecret }) {
-  const taps = useRef(0);
-  const timer = useRef(null);
-
-  const handleClick = () => {
-    taps.current += 1;
-
-    clearTimeout(timer.current);
-
-    timer.current = setTimeout(() => {
-      taps.current = 0;
-    }, 900);
-
-    if (taps.current >= 5) {
-      taps.current = 0;
-      onSecret();
-    }
-  };
-
-  return (
-    <button
-      className="logo"
-      onClick={handleClick}
-      aria-label="Radhe Box Cricket"
-    >
-      <span className="logo-mark">
-        R
-      </span>
-
-      <span className="logo-name">
-        RADHE
-        <span>BOX CRICKET</span>
-      </span>
-    </button>
-  );
-}
-
-/* =========================================================
-   NAVBAR
-========================================================= */
-
-function Navbar({
-  onBook,
-  onSecret,
-}) {
-  const [open, setOpen] =
-    useState(false);
-
-  const go = (id) => {
-    setOpen(false);
-
-    document
-      .getElementById(id)
-      ?.scrollIntoView({
-        behavior: "smooth",
-      });
-  };
-
-  return (
-    <header className="nav">
-      <Logo onSecret={onSecret} />
-
-      <nav
-        className={
-          open
-            ? "mobile-open"
-            : ""
-        }
-      >
-        {[
-          ["home", "Home"],
-          ["about", "About"],
-          ["arena", "Arena"],
-          ["book", "Book"],
-          ["contact", "Contact"],
-        ].map(([id, label]) => (
-          <button
-            key={id}
-            onClick={() => go(id)}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
-
-      <button
-        className="nav-cta"
-        onClick={onBook}
-      >
-        BOOK YOUR SLOT
-        <ArrowRight size={16} />
-      </button>
-
-      <button
-        className="menu"
-        onClick={() => setOpen(!open)}
-        aria-label="Menu"
-      >
-        {open ? <X /> : <Menu />}
-      </button>
-    </header>
   );
 }
 
@@ -436,18 +277,14 @@ function Navbar({
 
 function Hero({ onBook }) {
   return (
-    <section
-      id="home"
-      className="hero section"
-    >
-      <div className="hero-grid" />
-      <div className="hero-orb" />
+    <section id="home" className="hero">
+      <div className="hero-glow" />
 
-      <div className="hero-copy reveal">
-        <p className="eyebrow">
+      <div className="hero-content">
+        <div className="eyebrow">
           <span />
-          AHMEDABAD • PRIVATE BOX CRICKET
-        </p>
+          AHMEDABAD'S NIGHT CRICKET EXPERIENCE
+        </div>
 
         <h1>
           YOUR GAME.
@@ -455,30 +292,24 @@ function Hero({ onBook }) {
           <em>YOUR NIGHT.</em>
         </h1>
 
-        <p className="hero-text">
-          A premium box-cricket arena
-          built for fast games,
-          competitive nights and
-          serious fun.
+        <p>
+          Step onto the pitch. Bring your squad.
+          <br />
+          Play the game your way.
         </p>
 
         <div className="hero-actions">
-          <button
-            className="primary"
-            onClick={onBook}
-          >
+          <button className="gold-btn" onClick={onBook}>
             BOOK YOUR SLOT
-            <ArrowRight />
+            <ArrowRight size={18} />
           </button>
 
           <button
-            className="ghost hero-explore"
+            className="ghost-btn"
             onClick={() =>
               document
                 .getElementById("arena")
-                ?.scrollIntoView({
-                  behavior: "smooth",
-                })
+                ?.scrollIntoView({ behavior: "smooth" })
             }
           >
             EXPLORE ARENA
@@ -487,36 +318,24 @@ function Hero({ onBook }) {
 
         <div className="hero-meta">
           <span>
-            <MapPin />
-            Ahmedabad
+            <MapPin size={14} />
+            AHMEDABAD
           </span>
-
           <span>
-            <Zap />
-            Day + Night Sessions
-          </span>
-
-          <span>
-            <ShieldCheck />
-            Secure Booking
+            <Clock3 size={14} />
+            06:00 AM — 12:00 AM
           </span>
         </div>
       </div>
 
-      <div className="hero-score reveal">
-        <span>RADHE</span>
-
-        <strong>01</strong>
-
-        <small>
-          BOX CRICKET / ARENA
-        </small>
+      <div className="hero-side">
+        <span>EST.</span>
+        <strong>2026</strong>
       </div>
 
-      <div className="hero-corner">
-        <span>06:00</span>
-        <span>—</span>
-        <span>00:00</span>
+      <div className="scroll-indicator">
+        <span>SCROLL TO PLAY</span>
+        <div />
       </div>
     </section>
   );
@@ -527,27 +346,22 @@ function Hero({ onBook }) {
 ========================================================= */
 
 function Stats() {
+  const data = [
+    ["01", "Premium", "Box Cricket Arena"],
+    ["02", "₹800", "Day Slot / Hour"],
+    ["03", "₹1100", "Night Slot / Hour"],
+    ["04", "18", "Hours Of Play"],
+  ];
+
   return (
-    <section className="stats">
-      <div>
-        <strong>18</strong>
-        <span>HOURLY SLOTS</span>
-      </div>
-
-      <div>
-        <strong>2×</strong>
-        <span>POWER SESSION</span>
-      </div>
-
-      <div>
-        <strong>₹800</strong>
-        <span>DAY / HOUR</span>
-      </div>
-
-      <div>
-        <strong>₹1100</strong>
-        <span>NIGHT / HOUR</span>
-      </div>
+    <section className="stats-section">
+      {data.map(([num, value, label]) => (
+        <div className="stat" key={num}>
+          <small>{num}</small>
+          <strong>{value}</strong>
+          <span>{label}</span>
+        </div>
+      ))}
     </section>
   );
 }
@@ -558,56 +372,47 @@ function Stats() {
 
 function About() {
   return (
-    <section
-      id="about"
-      className="section about"
-    >
-      <div className="section-tag">
-        01 / THE EXPERIENCE
+    <section className="about section-pad">
+      <div className="section-kicker">
+        <span>01</span>
+        THE RADHE EXPERIENCE
       </div>
 
-      <div className="two-col">
+      <div className="about-grid">
         <div>
           <h2>
             NOT JUST A
             <br />
-            <em>CRICKET GROUND.</em>
+            <span>CRICKET BOX.</span>
           </h2>
         </div>
 
-        <div>
-          <p className="lead">
-            A private box-cricket
-            experience designed around
-            the way Ahmedabad actually
-            plays — quick games,
-            competitive nights and zero
-            booking chaos.
+        <div className="about-copy">
+          <p className="large-copy">
+            Radhe is built for the nights when your group
+            needs more than just another plan.
           </p>
 
-          <p className="muted">
-            Premium turf, flood lighting,
-            clean facilities and a booking
-            system that tells you exactly
-            when your game starts.
+          <p>
+            A premium box-cricket experience designed for
+            friends, teams, celebrations and competitive
+            games — all under one roof.
           </p>
-        </div>
-      </div>
 
-      <div className="about-strip">
-        <div>
-          <span>01</span>
-          <strong>PLAY</strong>
-        </div>
-
-        <div>
-          <span>02</span>
-          <strong>COMPETE</strong>
-        </div>
-
-        <div>
-          <span>03</span>
-          <strong>REPEAT</strong>
+          <div className="about-points">
+            <div>
+              <ShieldCheck />
+              <span>Professional setup</span>
+            </div>
+            <div>
+              <Zap />
+              <span>Fast booking</span>
+            </div>
+            <div>
+              <Users />
+              <span>Built for squads</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -619,88 +424,61 @@ function About() {
 ========================================================= */
 
 function Arena() {
-  const items = [
-    [
-      "01",
-      "PREMIUM TURF",
-      "Fast, clean playing surface.",
-      Trophy,
-    ],
-    [
-      "02",
-      "FLOOD LIGHTS",
-      "Built for night sessions.",
-      Zap,
-    ],
-    [
-      "03",
-      "BOX SETUP",
-      "Tight boundaries. Faster games.",
-      Sparkles,
-    ],
-    [
-      "04",
-      "SEATING",
-      "Watch the game between innings.",
-      Users,
-    ],
-    [
-      "05",
-      "PARKING",
-      "Easy arrival, easy exit.",
-      MapPin,
-    ],
-    [
-      "06",
-      "CLEAN FACILITIES",
-      "A comfortable arena experience.",
-      ShieldCheck,
-    ],
+  const cards = [
+    {
+      icon: Trophy,
+      number: "01",
+      title: "COMPETITIVE PLAY",
+      text: "Bring your strongest squad and settle the score.",
+    },
+    {
+      icon: Sparkles,
+      number: "02",
+      title: "NIGHT VIBES",
+      text: "Lights on. Music up. Game face on.",
+    },
+    {
+      icon: Users,
+      number: "03",
+      title: "SQUAD TIME",
+      text: "Perfect for friends, teams and celebrations.",
+    },
   ];
 
   return (
-    <section
-      id="arena"
-      className="section arena"
-    >
-      <div className="section-head">
-        <div>
-          <div className="section-tag">
-            02 / THE ARENA
-          </div>
-
-          <h2>
-            BUILT FOR
-            <br />
-            <em>GAME NIGHT.</em>
-          </h2>
+    <section id="arena" className="arena section-pad">
+      <div className="section-heading">
+        <div className="section-kicker">
+          <span>02</span>
+          WHY RADHE
         </div>
 
-        <p>
-          Every detail is designed
-          to keep the focus on the game.
-        </p>
+        <h2>
+          BUILT TO
+          <br />
+          <span>PLAY DIFFERENT.</span>
+        </h2>
       </div>
 
-      <div className="feature-grid">
-        {items.map(
-          ([
-            number,
-            title,
-            description,
-            Icon,
-          ]) => (
-            <article key={number}>
-              <span>{number}</span>
+      <div className="arena-grid">
+        {cards.map((card) => {
+          const Icon = card.icon;
 
-              <Icon />
+          return (
+            <article className="arena-card" key={card.number}>
+              <div className="card-top">
+                <span>{card.number}</span>
+                <Icon size={24} />
+              </div>
 
-              <h3>{title}</h3>
+              <h3>{card.title}</h3>
 
-              <p>{description}</p>
+              <p>{card.text}</p>
+
+              <div className="card-line" />
             </article>
-          )
-        )}
+          );
+        })}
       </div>
     </section>
   );
@@ -710,1335 +488,596 @@ function Arena() {
    DATE PICKER
 ========================================================= */
 
-function DatePicker({
-  date,
-  setDate,
-}) {
-  const dates = useMemo(
-    () =>
-      Array.from(
-        { length: 10 },
-        (_, index) => {
-          const current =
-            new Date();
+function DatePicker({ value, onChange }) {
+  const dates = useMemo(() => {
+    return Array.from({ length: 14 }, (_, index) => {
+      const date = new Date();
+      date.setDate(date.getDate() + index);
 
-          current.setHours(
-            0,
-            0,
-            0,
-            0
-          );
+      const iso = new Date(
+        date.getTime() -
+          date.getTimezoneOffset() * 60000
+      )
+        .toISOString()
+        .split("T")[0];
 
-          current.setDate(
-            current.getDate() +
-              index
-          );
-
-          return current;
-        }
-      ),
-    []
-  );
+      return {
+        iso,
+        day: date.toLocaleDateString("en-IN", {
+          weekday: "short",
+        }),
+        number: date.getDate(),
+        month: date.toLocaleDateString("en-IN", {
+          month: "short",
+        }),
+      };
+    });
+  }, []);
 
   return (
-    <div className="dates">
-      {dates.map((dateItem) => {
-        const value =
-          isoDate(dateItem);
-
-        return (
-          <button
-            key={value}
-            className={
-              date === value
-                ? "selected"
-                : ""
-            }
-            onClick={() =>
-              setDate(value)
-            }
-          >
-            <small>
-              {dateItem
-                .toLocaleDateString(
-                  "en-IN",
-                  {
-                    weekday: "short",
-                  }
-                )
-                .toUpperCase()}
-            </small>
-
-            <strong>
-              {dateItem.getDate()}
-            </strong>
-
-            <span>
-              {dateItem
-                .toLocaleDateString(
-                  "en-IN",
-                  {
-                    month: "short",
-                  }
-                )
-                .toUpperCase()}
-            </span>
-          </button>
-        );
-      })}
+    <div className="date-picker">
+      {dates.map((date) => (
+        <button
+          key={date.iso}
+          className={value === date.iso ? "selected" : ""}
+          onClick={() => onChange(date.iso)}
+        >
+          <span>{date.day}</span>
+          <strong>{date.number}</strong>
+          <small>{date.month}</small>
+        </button>
+      ))}
     </div>
   );
 }
 
 /* =========================================================
-   BOOKING SYSTEM
+   BOOKING
 ========================================================= */
 
-function Booking({ onSuccess }) {
-  const [date, setDate] =
-    useState(
-      isoDate(new Date())
-    );
+function Booking() {
+  const [date, setDate] = useState(todayString());
+  const [duration, setDuration] = useState(1);
+  const [selectedHour, setSelectedHour] = useState(null);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [players, setPlayers] = useState(8);
 
-  const [duration, setDuration] =
-    useState(1);
-
-  const [start, setStart] =
-    useState(null);
-
-  const [name, setName] =
-    useState("");
-
-  const [phone, setPhone] =
-    useState("");
-
-  const [players, setPlayers] =
-    useState(6);
-
-  const [blocked, setBlocked] =
-    useState([]);
-
-  const [booked, setBooked] =
-    useState([]);
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [message, setMessage] =
-    useState("");
-
-  /* -------------------------------------------------------
-     LOAD AVAILABILITY
-  ------------------------------------------------------- */
-
-  const loadAvailability =
-    async () => {
-      if (!supabase) return;
-
-      const [
-        blockedResult,
-        bookingResult,
-      ] = await Promise.all([
-        supabase
-          .from("blocked_slots")
-          .select("start_time")
-          .eq("date", date),
-
-        supabase
-          .from("bookings")
-          .select(
-            "start_time,duration_hours,status"
-          )
-          .eq("date", date)
-          .in("status", [
-            "Pending",
-            "Approved",
-          ]),
-      ]);
-
-      const blockedHours =
-        (blockedResult.data || [])
-          .map((item) =>
-            item.start_time?.slice(
-              0,
-              5
-            )
-          )
-          .filter(Boolean);
-
-      const occupiedHours = [];
-
-      (
-        bookingResult.data || []
-      ).forEach((booking) => {
-        if (!booking.start_time)
-          return;
-
-        const hour =
-          Number(
-            booking.start_time.slice(
-              0,
-              2
-            )
-          );
-
-        const durationHours =
-          Number(
-            booking.duration_hours ||
-              1
-          );
-
-        for (
-          let index = 0;
-          index < durationHours;
-          index++
-        ) {
-          occupiedHours.push(
-            `${String(
-              hour + index
-            ).padStart(
-              2,
-              "0"
-            )}:00`
-          );
-        }
-      });
-
-      setBlocked(
-        blockedHours
-      );
-
-      setBooked(
-        occupiedHours
-      );
-    };
+  const [blocked, setBlocked] = useState([]);
+  const [booked, setBooked] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
+    setSelectedHour(null);
     loadAvailability();
   }, [date]);
 
-  /* -------------------------------------------------------
-     AVAILABILITY CHECK
-  ------------------------------------------------------- */
+  const loadAvailability = async () => {
+    setLoadingSlots(true);
+    setMessage("");
+
+    if (!supabase) {
+      setBlocked([]);
+      setBooked([]);
+      setLoadingSlots(false);
+      return;
+    }
+
+    const [blockedRes, bookedRes] = await Promise.all([
+      supabase
+        .from("blocked_slots")
+        .select("start_time,end_time")
+        .eq("date", date),
+
+      supabase
+        .from("bookings")
+        .select(
+          "slot,start_time,end_time,status,duration_hours"
+        )
+        .eq("date", date)
+        .in("status", ["Pending", "Approved"]),
+    ]);
+
+    setBlocked(
+      blockedRes.data?.map((x) => x.start_time) || []
+    );
+
+    setBooked(
+      bookedRes.data?.map((x) => {
+        if (x.start_time) {
+          return Number(x.start_time.slice(0, 2));
+        }
+
+        return Number(
+          String(x.slot || "").match(/\d+/)?.[0]
+        );
+      }) || []
+    );
+
+    setLoadingSlots(false);
+  };
 
   const available = (hour) => {
-    const current =
-      `${String(hour).padStart(
-        2,
-        "0"
-      )}:00`;
+    if (duration === 2 && hour > 22) return false;
 
-    /* Current hour */
-    if (
-      blocked.includes(current) ||
-      booked.includes(current)
-    ) {
+    if (blocked.includes(
+      `${String(hour).padStart(2, "0")}:00`
+    )) {
       return false;
     }
 
-    /* Single booking */
-    if (duration === 1) {
-      return true;
-    }
+    if (booked.includes(hour)) return false;
 
-    /* Two-hour booking */
+    if (duration === 2) {
+      if (blocked.includes(
+        `${String(hour + 1).padStart(2, "0")}:00`
+      )) {
+        return false;
+      }
 
-    const nextHour =
-      hour + 1;
-
-    if (nextHour >= 24) {
-      return false;
-    }
-
-    const next =
-      `${String(nextHour).padStart(
-        2,
-        "0"
-      )}:00`;
-
-    if (
-      blocked.includes(next) ||
-      booked.includes(next)
-    ) {
-      return false;
+      if (booked.includes(hour + 1)) return false;
     }
 
     return true;
   };
 
-  const total =
-    start === null
+  const totalPrice =
+    selectedHour === null
       ? 0
-      : priceFor(
-          start,
-          duration
-        );
+      : duration === 2
+      ? priceForHour(selectedHour) +
+        priceForHour(selectedHour + 1)
+      : priceForHour(selectedHour);
 
-  /* -------------------------------------------------------
-     BOOK
-  ------------------------------------------------------- */
-
-  const submit = async (
-    event
-  ) => {
-    event.preventDefault();
+  const submitBooking = async (e) => {
+    e.preventDefault();
 
     setMessage("");
 
-    if (
-      !name.trim() ||
-      !/^[6-9]\d{9}$/.test(
-        phone
-      ) ||
-      start === null
-    ) {
-      setMessage(
-        "Enter your name, valid mobile number and a slot."
-      );
-
+    if (selectedHour === null) {
+      setMessage("Please select a slot.");
       return;
     }
 
-    setLoading(true);
+    if (!name.trim() || phone.trim().length < 10) {
+      setMessage("Please enter a valid name and phone number.");
+      return;
+    }
+
+    if (!supabase) {
+      setMessage(
+        "Supabase is not connected. Add your environment variables first."
+      );
+      return;
+    }
+
+    setSubmitting(true);
 
     try {
-      if (!supabase) {
-        throw new Error(
-          "Supabase is not configured. Add your Vercel environment variables."
-        );
-      }
+      const startTime = `${String(selectedHour).padStart(
+        2,
+        "0"
+      )}:00`;
 
-      const {
-        data,
-        error,
-      } = await supabase.rpc(
+      const { data, error } = await supabase.rpc(
         "create_radhe_booking",
         {
-          p_name:
-            name.trim(),
-
-          p_phone:
-            phone,
-
-          p_date:
-            date,
-
-          p_start_time:
-            `${String(
-              start
-            ).padStart(
-              2,
-              "0"
-            )}:00`,
-
-          p_duration_hours:
-            duration,
-
-          p_players:
-            players,
-
-          p_total_price:
-            total,
-
-          p_slot_label:
-            slotLabel(
-              start,
-              duration
-            ),
+          p_name: name.trim(),
+          p_phone: phone.trim(),
+          p_date: date,
+          p_start_time: startTime,
+          p_players: Number(players),
+          p_duration_hours: duration,
         }
       );
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
-      const whatsappText =
-        [
-          "🏏 RADHE BOX CRICKET BOOKING",
-          "",
-          `Name: ${name}`,
-          `Date: ${date}`,
-          `Time: ${slotLabel(
-            start,
-            duration
-          )}`,
-          `Players: ${players}`,
-          `Duration: ${duration} hour${
-            duration > 1
-              ? "s"
-              : ""
-          }`,
-          `Amount: ₹${total}`,
-          "Status: Pending",
-        ].join("\n");
+      const booking = Array.isArray(data) ? data[0] : data;
+
+      const endHour = selectedHour + duration;
+
+      const whatsappText = [
+        "🏏 RADHE BOX CRICKET BOOKING",
+        "",
+        `Name: ${name}`,
+        `Phone: ${phone}`,
+        `Date: ${date}`,
+        `Slot: ${hourLabel(selectedHour)} - ${safeHourLabel(
+          endHour
+        )}`,
+        `Duration: ${duration} hour${
+          duration > 1 ? "s" : ""
+        }`,
+        `Players: ${players}`,
+        `Amount: ₹${totalPrice}`,
+        "",
+        "Booking status: Pending approval",
+        booking?.id ? `Booking ID: ${booking.id}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n");
 
       window.open(
-        `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(
+        `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
           whatsappText
         )}`,
         "_blank"
       );
 
-      onSuccess?.(data);
-
       setMessage(
-        "Booking request sent successfully. WhatsApp confirmation is ready."
+        "Booking request sent! WhatsApp confirmation opened."
       );
 
-      setName("");
-      setPhone("");
-      setStart(null);
-
+      setSelectedHour(null);
       await loadAvailability();
     } catch (error) {
+      console.error(error);
+
       setMessage(
         error?.message ||
-          "Booking failed. Please try again."
+          "Booking failed. Please try another slot."
       );
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
-  /* -------------------------------------------------------
-     RENDER
-  ------------------------------------------------------- */
-
   return (
-    <section
-      id="book"
-      className="section booking"
-    >
-      <div className="section-tag">
-        03 / BOOK YOUR GAME
+    <section id="booking" className="booking section-pad">
+      <div className="section-kicker">
+        <span>03</span>
+        BOOK YOUR GAME
       </div>
 
-      <div className="booking-head">
-        <div>
+      <div className="booking-layout">
+        <div className="booking-info">
           <h2>
-            LOCK IN
+            YOUR SLOT.
             <br />
-            <em>GAME TIME.</em>
+            <span>YOUR CALL.</span>
           </h2>
 
           <p>
-            Pick a date, choose your
-            session and let the arena
-            handle the rest.
+            Pick your date, choose your game duration and
+            lock in your pitch.
           </p>
+
+          <div className="price-box">
+            <div>
+              <span>DAY</span>
+              <strong>₹800</strong>
+              <small>06:00 AM — 05:00 PM</small>
+            </div>
+
+            <div>
+              <span>NIGHT</span>
+              <strong>₹1100</strong>
+              <small>05:00 PM — 12:00 AM</small>
+            </div>
+          </div>
         </div>
 
-        <div className="duration">
-          <button
-            type="button"
-            className={
-              duration === 1
-                ? "on"
-                : ""
-            }
-            onClick={() => {
-              setDuration(1);
-              setStart(null);
-            }}
-          >
-            1 HOUR
-          </button>
+        <form
+          className="booking-panel"
+          onSubmit={submitBooking}
+        >
+          <div className="form-section">
+            <label>
+              <CalendarDays size={16} />
+              SELECT DATE
+            </label>
 
-          <button
-            type="button"
-            className={
-              duration === 2
-                ? "on"
-                : ""
-            }
-            onClick={() => {
-              setDuration(2);
-              setStart(null);
-            }}
-          >
-            2 HOURS
-            <span>
-              POWER SESSION
-            </span>
-          </button>
-        </div>
-      </div>
+            <DatePicker
+              value={date}
+              onChange={setDate}
+            />
+          </div>
 
-      <div className="booking-mode-note">
-        <Clock3 size={15} />
+          <div className="form-section">
+            <label>
+              <Clock3 size={16} />
+              GAME DURATION
+            </label>
 
-        {duration === 1 ? (
-          <span>
-            Standard 1-hour game
-          </span>
-        ) : (
-          <span>
-            <strong>
-              2 consecutive hours
-            </strong>{" "}
-            — both slots must be available
-          </span>
-        )}
-      </div>
-
-      <DatePicker
-        date={date}
-        setDate={(value) => {
-          setDate(value);
-          setStart(null);
-        }}
-      />
-
-      <div className="slot-panel">
-        <div className="slot-top">
-          <span>
-            <Clock3 />
-            AVAILABLE SESSIONS
-          </span>
-
-          <small>
-            DAY ₹800 / HR
-            {" • "}
-            NIGHT ₹1100 / HR
-          </small>
-        </div>
-
-        <div className="slot-grid">
-          {slots.map((hour) => {
-            const isAvailable =
-              available(hour);
-
-            const selected =
-              start === hour;
-
-            const currentKey =
-              `${String(
-                hour
-              ).padStart(
-                2,
-                "0"
-              )}:00`;
-
-            const isBlocked =
-              blocked.includes(
-                currentKey
-              );
-
-            let statusText =
-              `₹${priceFor(
-                hour,
-                duration
-              )}`;
-
-            if (!isAvailable) {
-              statusText =
-                isBlocked
-                  ? "BLOCKED"
-                  : "BOOKED";
-            }
-
-            return (
+            <div className="duration-switch">
               <button
                 type="button"
-                key={hour}
-                disabled={!isAvailable}
-                className={`slot ${
-                  selected
-                    ? "selected"
-                    : ""
-                } ${
-                  !isAvailable
-                    ? "off"
-                    : ""
-                }`}
-                onClick={() =>
-                  setStart(hour)
+                className={duration === 1 ? "active" : ""}
+                onClick={() => {
+                  setDuration(1);
+                  setSelectedHour(null);
+                }}
+              >
+                1 HOUR
+              </button>
+
+              <button
+                type="button"
+                className={duration === 2 ? "active" : ""}
+                onClick={() => {
+                  setDuration(2);
+                  setSelectedHour(null);
+                }}
+              >
+                2 HOURS
+              </button>
+            </div>
+          </div>
+
+          <div className="form-section">
+            <label>
+              <Zap size={16} />
+              AVAILABLE SLOTS
+            </label>
+
+            {loadingSlots ? (
+              <div className="slot-loading">
+                CHECKING LIVE AVAILABILITY...
+              </div>
+            ) : (
+              <div className="slot-grid">
+                {slots
+                  .filter(
+                    (hour) =>
+                      duration === 1 || hour <= 22
+                  )
+                  .map((hour) => {
+                    const isAvailable = available(hour);
+                    const selected =
+                      selectedHour === hour;
+
+                    const endHour = hour + duration;
+
+                    const price =
+                      duration === 2
+                        ? priceForHour(hour) +
+                          priceForHour(hour + 1)
+                        : priceForHour(hour);
+
+                    return (
+                      <button
+                        type="button"
+                        key={hour}
+                        disabled={!isAvailable}
+                        className={[
+                          "slot",
+                          selected ? "selected" : "",
+                          !isAvailable ? "disabled" : "",
+                        ].join(" ")}
+                        onClick={() =>
+                          setSelectedHour(hour)
+                        }
+                      >
+                        <strong>
+                          {hourLabel(hour)}
+                        </strong>
+
+                        <span>
+                          {hourLabel(hour)} →{" "}
+                          {safeHourLabel(endHour)}
+                        </span>
+
+                        <small>
+                          {!isAvailable
+                            ? "UNAVAILABLE"
+                            : duration === 2
+                            ? `2 HOURS • ₹${price}`
+                            : `₹${price}`}
+                        </small>
+                      </button>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
+
+          <div className="form-fields">
+            <div>
+              <label>YOUR NAME</label>
+              <input
+                value={name}
+                onChange={(e) =>
+                  setName(e.target.value)
+                }
+                placeholder="Enter name"
+              />
+            </div>
+
+            <div>
+              <label>PHONE NUMBER</label>
+              <input
+                value={phone}
+                onChange={(e) =>
+                  setPhone(
+                    e.target.value.replace(/\D/g, "")
+                  )
+                }
+                maxLength={10}
+                placeholder="10 digit number"
+              />
+            </div>
+
+            <div>
+              <label>PLAYERS</label>
+              <select
+                value={players}
+                onChange={(e) =>
+                  setPlayers(e.target.value)
                 }
               >
+                {Array.from(
+                  { length: 30 },
+                  (_, i) => i + 1
+                ).map((n) => (
+                  <option key={n} value={n}>
+                    {n} players
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {selectedHour !== null && (
+            <div className="booking-summary">
+              <div>
+                <span>SELECTED</span>
                 <strong>
-                  {hourLabel(hour)}
+                  {hourLabel(selectedHour)} —{" "}
+                  {safeHourLabel(
+                    selectedHour + duration
+                  )}
                 </strong>
+              </div>
 
-                <span>
-                  {duration === 2
-                    ? `2-HOUR • ${hourLabel(
-                        hour
-                      )} → ${safeHourLabel(
-                        hour + 2
-                      )}`
-                    : `1-HOUR • ${hourLabel(
-                        hour
-                      )} → ${safeHourLabel(
-                        hour + 1
-                      )}`}
-                </span>
+              <div>
+                <span>TOTAL</span>
+                <strong>₹{totalPrice}</strong>
+              </div>
+            </div>
+          )}
 
-                <small>
-                  {statusText}
-                </small>
-              </button>
-            );
-          })}
-        </div>
+          {message && (
+            <div className="booking-message">
+              {message}
+            </div>
+          )}
+
+          <button
+            className="submit-booking"
+            disabled={submitting}
+          >
+            {submitting
+              ? "PROCESSING..."
+              : "REQUEST BOOKING"}
+            <ArrowRight size={18} />
+          </button>
+        </form>
       </div>
-
-      <form
-        className="booking-form"
-        onSubmit={submit}
-      >
-        <div className="field">
-          <label>
-            YOUR NAME
-          </label>
-
-          <input
-            value={name}
-            onChange={(event) =>
-              setName(
-                event.target.value
-              )
-            }
-            placeholder="e.g. Kaustubh"
-          />
-        </div>
-
-        <div className="field">
-          <label>
-            MOBILE
-          </label>
-
-          <input
-            value={phone}
-            onChange={(event) =>
-              setPhone(
-                event.target.value
-                  .replace(
-                    /\D/g,
-                    ""
-                  )
-                  .slice(0, 10)
-              )
-            }
-            placeholder="10-digit mobile"
-            inputMode="numeric"
-          />
-        </div>
-
-        <div className="field">
-          <label>
-            PLAYERS
-          </label>
-
-          <input
-            type="number"
-            min="1"
-            max="30"
-            value={players}
-            onChange={(event) =>
-              setPlayers(
-                Number(
-                  event.target.value
-                )
-              )
-            }
-          />
-        </div>
-
-        <div className="summary">
-          <span>
-            YOUR GAME TIME
-          </span>
-
-          <strong>
-            {start !== null
-              ? slotLabel(
-                  start,
-                  duration
-                )
-              : "Select a slot"}
-          </strong>
-
-          <small>
-            {start !== null
-              ? `₹${total} • ${duration} hour${
-                  duration > 1
-                    ? "s"
-                    : ""
-                } • ${players} players`
-              : "Choose a session above"}
-          </small>
-        </div>
-
-        <button
-          className="primary submit"
-          disabled={loading}
-        >
-          {loading
-            ? "LOCKING..."
-            : "CONFIRM BOOKING"}
-
-          <ArrowRight />
-        </button>
-      </form>
-
-      {message && (
-        <div className="notice">
-          {message}
-        </div>
-      )}
     </section>
   );
 }
 
 /* =========================================================
-   ADMIN
+   CONTACT
 ========================================================= */
 
-function Admin({ onClose }) {
-  const [session, setSession] =
-    useState(null);
-
-  const [email, setEmail] =
-    useState("");
-
-  const [password, setPassword] =
-    useState("");
-
-  const [date, setDate] =
-    useState(
-      isoDate(new Date())
-    );
-
-  const [bookings, setBookings] =
-    useState([]);
-
-  const [blocked, setBlocked] =
-    useState([]);
-
-  const [busy, setBusy] =
-    useState(false);
-
-  const [message, setMessage] =
-    useState("");
-
-  const refresh = async () => {
-    if (!supabase || !session)
-      return;
-
-    const [
-      bookingResult,
-      blockedResult,
-    ] = await Promise.all([
-      supabase
-        .from("bookings")
-        .select("*")
-        .order("date", {
-          ascending: false,
-        })
-        .order("start_time"),
-
-      supabase
-        .from("blocked_slots")
-        .select("*")
-        .eq("date", date)
-        .order("start_time"),
-    ]);
-
-    setBookings(
-      bookingResult.data || []
-    );
-
-    setBlocked(
-      blockedResult.data || []
-    );
-  };
-
-  useEffect(() => {
-    if (session) {
-      refresh();
-    }
-  }, [session, date]);
-
-  const login = async (event) => {
-    event.preventDefault();
-
-    setMessage("");
-
-    if (!supabase) {
-      setMessage(
-        "Configure Supabase first."
-      );
-
-      return;
-    }
-
-    const {
-      data,
-      error,
-    } =
-      await supabase.auth.signInWithPassword(
-        {
-          email,
-          password,
-        }
-      );
-
-    if (error) {
-      setMessage(
-        error.message
-      );
-
-      return;
-    }
-
-    setSession(
-      data.session
-    );
-  };
-
-  const logout = async () => {
-    await supabase?.auth.signOut();
-    setSession(null);
-  };
-
-  const toggleBlock = async (
-    hour
-  ) => {
-    if (!supabase) return;
-
-    const key =
-      `${String(hour).padStart(
-        2,
-        "0"
-      )}:00`;
-
-    const existing =
-      blocked.find(
-        (item) =>
-          item.start_time?.slice(
-            0,
-            5
-          ) === key
-      );
-
-    setBusy(true);
-
-    if (existing) {
-      await supabase
-        .from("blocked_slots")
-        .delete()
-        .eq("id", existing.id);
-    } else {
-      await supabase
-        .from("blocked_slots")
-        .insert({
-          date,
-          start_time: key,
-          end_time:
-            `${String(
-              hour + 1
-            ).padStart(
-              2,
-              "0"
-            )}:00`,
-          reason:
-            "Blocked by admin",
-        });
-    }
-
-    setBusy(false);
-
-    await refresh();
-  };
-
-  const updateStatus = async (
-    id,
-    status
-  ) => {
-    if (!supabase) return;
-
-    await supabase
-      .from("bookings")
-      .update({ status })
-      .eq("id", id);
-
-    await refresh();
-  };
-
-  if (!session) {
-    return (
-      <div className="admin-screen">
-        <button
-          className="close-admin"
-          onClick={onClose}
-        >
-          <X />
-        </button>
-
-        <div className="admin-login">
-          <div className="section-tag">
-            RADHE COMMAND CENTER
-          </div>
-
-          <h2>
-            CONTROL
-            <br />
-            <em>THE GAME.</em>
-          </h2>
-
-          <form onSubmit={login}>
-            <input
-              type="email"
-              placeholder="Admin email"
-              value={email}
-              onChange={(event) =>
-                setEmail(
-                  event.target.value
-                )
-              }
-            />
-
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(event) =>
-                setPassword(
-                  event.target.value
-                )
-              }
-            />
-
-            <button className="primary">
-              SIGN IN
-              <ArrowRight />
-            </button>
-          </form>
-
-          {message && (
-            <p className="error">
-              {message}
-            </p>
-          )}
-
-          <small>
-            Admin access is controlled
-            through Supabase Auth.
-          </small>
-        </div>
-      </div>
-    );
-  }
-
-  const pending =
-    bookings.filter(
-      (item) =>
-        item.status === "Pending"
-    ).length;
-
-  const revenue =
-    bookings
-      .filter(
-        (item) =>
-          item.status === "Approved"
-      )
-      .reduce(
-        (total, item) =>
-          total +
-          Number(
-            item.total_price || 0
-          ),
-        0
-      );
-
+function Contact() {
   return (
-    <div className="admin-screen">
-      <div className="admin-wrap">
-        <div className="admin-bar">
-          <div>
-            <span className="section-tag">
-              RADHE COMMAND CENTER
-            </span>
-
-            <h2>
-              CONTROL ROOM
-            </h2>
-          </div>
-
-          <div className="admin-bar-actions">
-            <button
-              className="ghost"
-              onClick={logout}
-            >
-              LOG OUT
-            </button>
-
-            <button
-              className="close-admin"
-              onClick={onClose}
-            >
-              <X />
-            </button>
-          </div>
+    <section id="contact" className="contact section-pad">
+      <div className="contact-inner">
+        <div className="section-kicker">
+          <span>04</span>
+          FIND RADHE
         </div>
 
-        <div className="admin-stats">
-          <div>
-            <small>
-              ALL BOOKINGS
-            </small>
+        <h2>
+          READY TO
+          <br />
+          <span>PLAY?</span>
+        </h2>
 
-            <strong>
-              {bookings.length}
-            </strong>
-          </div>
+        <p>
+          Gather the squad. Pick a slot.
+          <br />
+          We'll handle the rest.
+        </p>
 
-          <div>
-            <small>
-              PENDING
-            </small>
+        <div className="contact-actions">
+          <a
+            href="https://www.instagram.com/radhe_box_cricket/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Instagram size={18} />
+            @RADHE_BOX_CRICKET
+          </a>
 
-            <strong>
-              {pending}
-            </strong>
-          </div>
-
-          <div>
-            <small>
-              APPROVED REVENUE
-            </small>
-
-            <strong>
-              ₹{revenue}
-            </strong>
-          </div>
-
-          <div>
-            <small>
-              BLOCKED TODAY
-            </small>
-
-            <strong>
-              {blocked.length}
-            </strong>
-          </div>
+          <a href="tel:+917046706848">
+            <Phone size={18} />
+            CALL RADHE
+          </a>
         </div>
 
-        <div className="admin-grid">
-          <section className="admin-card">
-            <div className="admin-card-head">
-              <h3>
-                Slot Control
-              </h3>
-
-              <input
-                type="date"
-                value={date}
-                onChange={(event) =>
-                  setDate(
-                    event.target.value
-                  )
-                }
-              />
-            </div>
-
-            <div className="admin-slots">
-              {slots.map((hour) => {
-                const blockedItem =
-                  blocked.find(
-                    (item) =>
-                      item.start_time?.slice(
-                        0,
-                        5
-                      ) ===
-                      `${String(
-                        hour
-                      ).padStart(
-                        2,
-                        "0"
-                      )}:00`
-                  );
-
-                return (
-                  <button
-                    disabled={busy}
-                    className={
-                      blockedItem
-                        ? "blocked"
-                        : ""
-                    }
-                    onClick={() =>
-                      toggleBlock(
-                        hour
-                      )
-                    }
-                    key={hour}
-                  >
-                    <span>
-                      {hourLabel(
-                        hour
-                      )}
-                    </span>
-
-                    <small>
-                      {blockedItem
-                        ? "BLOCKED"
-                        : "AVAILABLE"}
-                    </small>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="admin-card">
-            <div className="admin-card-head">
-              <h3>
-                Bookings
-              </h3>
-
-              <button
-                className="ghost"
-                onClick={refresh}
-              >
-                REFRESH
-              </button>
-            </div>
-
-            <div className="booking-list">
-              {bookings
-                .slice(0, 50)
-                .map((booking) => (
-                  <article
-                    key={
-                      booking.id
-                    }
-                  >
-                    <div>
-                      <strong>
-                        {
-                          booking.name
-                        }
-                      </strong>
-
-                      <span>
-                        {
-                          booking.date
-                        }{" "}
-                        •{" "}
-                        {
-                          booking.slot
-                        }
-                      </span>
-
-                      <small>
-                        {
-                          booking.players
-                        }{" "}
-                        players •{" "}
-                        {
-                          booking.booking_type
-                        }{" "}
-                        • ₹
-                        {
-                          booking.total_price
-                        }
-                      </small>
-                    </div>
-
-                    <div className="actions">
-                      {booking.status ===
-                        "Pending" && (
-                        <>
-                          <button
-                            onClick={() =>
-                              updateStatus(
-                                booking.id,
-                                "Approved"
-                              )
-                            }
-                          >
-                            <Check />
-                          </button>
-
-                          <button
-                            onClick={() =>
-                              updateStatus(
-                                booking.id,
-                                "Rejected"
-                              )
-                            }
-                          >
-                            <X />
-                          </button>
-                        </>
-                      )}
-
-                      <b
-                        className={
-                          booking.status.toLowerCase()
-                        }
-                      >
-                        {
-                          booking.status
-                        }
-                      </b>
-                    </div>
-                  </article>
-                ))}
-            </div>
-          </section>
+        <div className="contact-location">
+          <MapPin size={18} />
+          <span>
+            Ahmedabad, Gujarat
+            <small>Exact location shared after booking</small>
+          </span>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
 /* =========================================================
-   SECRET CRICKET
+   SECRET CRICKET MODE
 ========================================================= */
 
-function SecretCricket({
-  close,
-}) {
-  const [result, setResult] =
-    useState("");
+function SecretCricket({ open, onClose }) {
+  const [score, setScore] = useState(0);
+  const [balls, setBalls] = useState(0);
 
-  const [score, setScore] =
-    useState(0);
+  if (!open) return null;
 
-  const [ballPosition, setBallPosition] =
-    useState(0);
+  const hit = () => {
+    if (balls >= 6) return;
 
-  const swing = () => {
-    if (result) return;
+    const runs = [1, 2, 4, 6][
+      Math.floor(Math.random() * 4)
+    ];
 
-    const random =
-      30 +
-      Math.floor(
-        Math.random() * 48
-      );
-
-    let runs = 0;
-
-    if (
-      random >= 48 &&
-      random <= 58
-    ) {
-      runs = 6;
-    } else if (
-      random >= 40 &&
-      random <= 66
-    ) {
-      runs = 4;
-    } else if (
-      random >= 30 &&
-      random <= 75
-    ) {
-      runs = 1;
-    }
-
-    setBallPosition(
-      random
-    );
-
-    setScore(
-      (current) =>
-        current + runs
-    );
-
-    setResult(
-      runs === 6
-        ? "SIX!"
-        : runs === 4
-        ? "FOUR!"
-        : runs === 1
-        ? "SINGLE"
-        : "WICKET"
-    );
+    setScore((x) => x + runs);
+    setBalls((x) => x + 1);
   };
 
-  useEffect(() => {
-    const handleKey = (event) => {
-      if (
-        event.key === " " ||
-        event.key === "Enter"
-      ) {
-        swing();
-      }
-    };
-
-    window.addEventListener(
-      "keydown",
-      handleKey
-    );
-
-    return () =>
-      window.removeEventListener(
-        "keydown",
-        handleKey
-      );
-  });
+  const reset = () => {
+    setScore(0);
+    setBalls(0);
+  };
 
   return (
-    <div className="game-overlay">
-      <button
-        className="game-close"
-        onClick={close}
-      >
+    <div className="secret-overlay">
+      <button className="secret-close" onClick={onClose}>
         <X />
       </button>
 
-      <div className="game">
-        <span className="section-tag">
+      <div className="secret-game">
+        <span className="secret-kicker">
           SECRET CRICKET MODE
         </span>
 
         <h2>
-          TIME YOUR
+          HIT THE
           <br />
-          <em>SWING.</em>
+          <span>BOUNDARY.</span>
         </h2>
 
-        <div className="game-score">
-          {score}
+        <div className="scoreboard">
+          <div>
+            <small>SCORE</small>
+            <strong>{score}</strong>
+          </div>
 
-          <small>
-            RUNS
-          </small>
+          <div>
+            <small>BALLS</small>
+            <strong>{balls}/6</strong>
+          </div>
         </div>
-
-        <div className="game-pitch">
-          <div
-            className="game-ball"
-            style={{
-              left: `${18 +
-                ballPosition}%`,
-            }}
-          />
-        </div>
-
-        <p>
-          {result ||
-            "Press SPACE / ENTER or tap SWING"}
-        </p>
 
         <button
-          className="primary"
-          onClick={swing}
+          className="cricket-hit"
+          onClick={hit}
+          disabled={balls >= 6}
         >
-          SWING
+          {balls >= 6 ? "INNINGS OVER" : "HIT THE BALL"}
         </button>
 
-        <button
-          className="ghost"
-          onClick={() => {
-            setBallPosition(0);
-            setResult("");
-            setScore(0);
-          }}
-        >
-          REPLAY
+        <button className="reset-game" onClick={reset}>
+          RESET
         </button>
       </div>
     </div>
@@ -2050,179 +1089,79 @@ function SecretCricket({
 ========================================================= */
 
 function App() {
-  const [intro, setIntro] =
-    useState(true);
+  const [intro, setIntro] = useState(true);
+  const [secret, setSecret] = useState(false);
 
-  const [secret, setSecret] =
-    useState(false);
-
-  const [admin, setAdmin] =
-    useState(false);
-
-  const [toast, setToast] =
-    useState("");
-
-  const book = () => {
+  const scrollToBooking = () => {
     document
-      .getElementById("book")
-      ?.scrollIntoView({
-        behavior: "smooth",
-      });
+      .getElementById("booking")
+      ?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const bookingSuccess = () => {
-    setToast(
-      "Booking request received."
-    );
+  useEffect(() => {
+    const keyHandler = (e) => {
+      if (
+        (e.code === "Space" || e.code === "Enter") &&
+        !e.target.matches("input, textarea, select")
+      ) {
+        setSecret(true);
+      }
 
-    setTimeout(() => {
-      setToast("");
-    }, 4000);
-  };
+      if (e.key === "Escape") {
+        setSecret(false);
+      }
+    };
+
+    window.addEventListener("keydown", keyHandler);
+
+    return () =>
+      window.removeEventListener("keydown", keyHandler);
+  }, []);
 
   return (
     <>
-      {intro && (
-        <CinematicIntro
-          onDone={() =>
-            setIntro(false)
-          }
-        />
-      )}
+      {intro && <CinematicIntro onDone={() => setIntro(false)} />}
 
       <CustomCursor />
 
       <ScrollBall />
 
-      <Navbar
-        onBook={book}
-        onSecret={() =>
-          setSecret(true)
-        }
-      />
+      <Navbar onSecret={() => setSecret(true)} />
 
       <main>
-        <Hero onBook={book} />
-
+        <Hero onBook={scrollToBooking} />
         <Stats />
-
         <About />
-
         <Arena />
-
-        <Booking
-          onSuccess={
-            bookingSuccess
-          }
-        />
-
-        <section
-          id="contact"
-          className="contact section"
-        >
-          <div>
-            <div className="section-tag">
-              04 / FIND US
-            </div>
-
-            <h2>
-              SEE YOU
-              <br />
-              <em>AT RADHE.</em>
-            </h2>
-          </div>
-
-          <div className="contact-card">
-            <MapPin />
-
-            <strong>
-              RADHE BOX CRICKET
-            </strong>
-
-            <span>
-              Ahmedabad, Gujarat
-            </span>
-
-            <a
-              href="https://www.google.com/maps/search/?api=1&query=Radhe+Box+Cricket+Ahmedabad"
-              target="_blank"
-              rel="noreferrer"
-            >
-              OPEN LOCATION
-              <ArrowRight size={16} />
-            </a>
-
-            <a
-              href="https://instagram.com/radhe_box_cricket"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Instagram size={16} />
-              @radhe_box_cricket
-            </a>
-
-            <a
-              href={`https://wa.me/${WHATSAPP}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Phone size={16} />
-              WHATSAPP
-            </a>
-          </div>
-        </section>
+        <Booking />
+        <Contact />
       </main>
 
-      <footer>
-        <span>
-          RADHE BOX CRICKET
-        </span>
+      <footer className="footer">
+        <div>
+          <strong>RADHE</strong>
+          <span>BOX CRICKET</span>
+        </div>
 
-        <span>
+        <p>
           YOUR GAME. YOUR NIGHT.
-        </span>
+        </p>
 
-        <button
-          onClick={() =>
-            setAdmin(true)
-          }
-        >
-          <Lock size={13} />
-          ADMIN
-        </button>
+        <small>
+          © 2026 Radhe Box Cricket. All rights reserved.
+        </small>
       </footer>
 
-      {secret && (
-        <SecretCricket
-          close={() =>
-            setSecret(false)
-          }
-        />
-      )}
-
-      {admin && (
-        <Admin
-          onClose={() =>
-            setAdmin(false)
-          }
-        />
-      )}
-
-      {toast && (
-        <div className="toast">
-          {toast}
-        </div>
-      )}
+      <SecretCricket
+        open={secret}
+        onClose={() => setSecret(false)}
+      />
     </>
   );
 }
 
-/* =========================================================
-   MOUNT
-========================================================= */
-
-createRoot(
-  document.getElementById(
-    "root"
-  )
-).render(<App />);
+createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
