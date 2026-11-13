@@ -1743,6 +1743,10 @@ a {
   }
 }
 
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1750,58 +1754,55 @@ a {
     scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    /* ================================
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* =========================================================
    MOBILE INTRO FIX
-================================ */
+========================================================= */
 
 @media (max-width: 600px) {
-  .intro {
+  .cinematic-intro {
     min-height: 100svh;
     height: 100svh;
     overflow: hidden;
   }
 
   .intro-copy {
-    width: 92%;
-    left: 4%;
-    right: 4%;
-    text-align: center;
+    width: 94vw;
+    height: 130px;
+    position: relative;
     z-index: 20;
+    display: grid;
+    place-items: center;
   }
 
-  .intro-line {
-    font-size: clamp(30px, 10vw, 52px);
-    line-height: 0.95;
-    letter-spacing: -0.03em;
+  .intro-word,
+  .intro-final {
+    width: 100%;
+    font-size: clamp(3rem, 13vw, 5rem);
+    line-height: 0.88;
     white-space: nowrap;
-  }
-
-  .intro-brand {
-    font-size: 13px;
-    letter-spacing: 0.25em;
-    bottom: 10%;
+    text-align: center;
   }
 
   .intro-ball {
-    width: 72px;
-    height: 72px;
+    width: 55px;
+    height: 55px;
+  }
+
+  .intro-brand {
+    bottom: 30px;
+    z-index: 30;
+  }
+
+  .intro-flash {
+    width: 35vw;
+    height: 35vw;
   }
 
   .intro-particles {
-    transform: scale(0.7);
-  }
-
-  .intro-grid {
-    opacity: 0.35;
-  }
-
-  /* Make sure intro text is never clipped on mobile */
-  .intro-copy,
-  .intro-line,
-  .intro-brand {
-    overflow: visible;
-  }
-}
-    transition-duration: 0.01ms !important;
+    z-index: 4;
   }
 }
