@@ -133,7 +133,7 @@ function CinematicIntro({ onDone }) {
 ========================================================= */
 
 function App() {
-  const [intro, setIntro] = useState(false);
+  const [intro, setIntro] = useState(true);
   const [secret, setSecret] = useState(false);
 
   const scrollToBooking = () => {
