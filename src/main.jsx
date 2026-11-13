@@ -60,58 +60,257 @@ const todayString = () => {
 /* =========================================================
    CINEMATIC INTRO
 ========================================================= */
-
 function CinematicIntro({ onDone }) {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase(1), 400),
-      setTimeout(() => setPhase(2), 950),
+      setTimeout(() => setPhase(1), 500),
+      setTimeout(() => setPhase(2), 1000),
       setTimeout(() => setPhase(3), 1500),
-      setTimeout(() => setPhase(4), 2050),
-      setTimeout(() => setPhase(5), 2750),
-      setTimeout(onDone, 3450),
+      setTimeout(() => setPhase(4), 2000),
+      setTimeout(() => setPhase(5), 2500),
+      setTimeout(() => setPhase(6), 3000),
+      setTimeout(() => setPhase(7), 3500),
+      setTimeout(() => setPhase(8), 4000),
+      setTimeout(() => setPhase(9), 4500),
+      setTimeout(() => onDone(), 5200),
     ];
 
     return () => timers.forEach(clearTimeout);
   }, [onDone]);
 
+  const words = [
+    "YOUR GAME.",
+    "YOUR NIGHT.",
+    "WORK HARD.",
+    "PLAY HARDER.",
+    "ONE PITCH.",
+    "ENDLESS GAMES.",
+    "NO EXCUSES.",
+    "JUST PLAY.",
+  ];
+
   return (
-    <div className={`cinematic-intro phase-${phase}`}>
+    <div
+      className={`cinematic-intro phase-${phase}`}
+      style={{
+        position: "fixed",
+        inset: 0,
+        width: "100vw",
+        height: "100svh",
+        minHeight: "100svh",
+        background: "#000",
+        zIndex: 99999,
+        overflow: "hidden",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
       <div className="intro-noise" />
       <div className="intro-grid" />
 
+      {/* PARTICLES */}
       <div className="intro-particles">
-        {Array.from({ length: 34 }).map((_, i) => (
-          <span key={i} style={{ "--i": i }} />
+        {Array.from({ length: 40 }).map((_, i) => (
+          <span
+            key={i}
+            style={{
+              position: "absolute",
+              left: `${50 + Math.cos(i) * (10 + i * 1.4)}%`,
+              top: `${50 + Math.sin(i) * (8 + i * 1.2)}%`,
+              width: "3px",
+              height: "3px",
+              borderRadius: "50%",
+              background: "#C9A86A",
+              opacity: phase >= 4 ? 0.8 : 0,
+              transform: `scale(${phase >= 4 ? 1 : 0})`,
+              transition: "all 0.5s ease",
+            }}
+          />
         ))}
       </div>
 
-      <div className="intro-ball">
-        <span className="intro-ball-seam" />
+      {/* CRICKET BALL */}
+      <div
+        className="intro-ball"
+        style={{
+          position: "absolute",
+          left: phase >= 4 ? "50%" : "115%",
+          top: "50%",
+          width: "clamp(52px, 14vw, 78px)",
+          height: "clamp(52px, 14vw, 78px)",
+          borderRadius: "50%",
+          zIndex: 40,
+          transform: `
+            translate(-50%, -50%)
+            rotate(${phase * 720}deg)
+            scale(${phase >= 4 ? 1 : 0.85})
+          `,
+          background:
+            "radial-gradient(circle at 30% 25%, #e94b4b 0%, #a71924 42%, #45070b 100%)",
+          boxShadow:
+            "0 0 25px rgba(167,25,36,.7), 0 0 90px rgba(167,25,36,.35)",
+          transition:
+            "left 0.8s cubic-bezier(.16,1,.3,1), transform 0.8s cubic-bezier(.16,1,.3,1)",
+        }}
+      >
+        <span
+          style={{
+            position: "absolute",
+            width: "92%",
+            height: "10px",
+            left: "4%",
+            top: "45%",
+            borderTop: "2px dashed rgba(255,255,255,.9)",
+            transform: "rotate(-35deg)",
+          }}
+        />
+
+        <span
+          style={{
+            position: "absolute",
+            inset: "8px",
+            borderRadius: "50%",
+            border: "1px solid rgba(255,255,255,.12)",
+          }}
+        />
       </div>
 
-      <div className="intro-flash" />
+      {/* FLASH */}
+      <div
+        className="intro-flash"
+        style={{
+          position: "absolute",
+          width: "45vw",
+          height: "45vw",
+          maxWidth: "320px",
+          maxHeight: "320px",
+          borderRadius: "50%",
+          background: "#fff",
+          filter: "blur(35px)",
+          opacity: phase === 4 ? 0.9 : 0,
+          zIndex: 30,
+          transition: "opacity .18s ease",
+          pointerEvents: "none",
+        }}
+      />
 
-      <div className="intro-copy">
-        <div className="intro-word word-1">YOUR GAME.</div>
-        <div className="intro-word word-2">YOUR NIGHT.</div>
-        <div className="intro-word word-3">WORK HARD.</div>
-        <div className="intro-word word-4">PLAY HARDER.</div>
-        <div className="intro-word word-5">ONE PITCH.</div>
-        <div className="intro-word word-6">ENDLESS GAMES.</div>
-        <div className="intro-word word-7">NO EXCUSES.</div>
-        <div className="intro-word word-8">JUST PLAY.</div>
+      {/* TEXT */}
+      <div
+        className="intro-copy"
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "94vw",
+          height: "130px",
+          zIndex: 60,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+        }}
+      >
+        {words.map((word, index) => {
+          const wordPhase = index + 1;
+          const visible = phase === wordPhase;
 
-        <div className="intro-final">
-          THIS IS <strong>RADHE.</strong>
+          return (
+            <div
+              key={word}
+              className={`intro-word word-${wordPhase}`}
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "100%",
+                fontFamily: '"Barlow Condensed", sans-serif',
+                fontWeight: 900,
+                fontSize: "clamp(2.7rem, 12.5vw, 5rem)",
+                lineHeight: 0.88,
+                letterSpacing: "-0.045em",
+                whiteSpace: "nowrap",
+                color: "#F4F1E8",
+                opacity: visible ? 1 : 0,
+                transform: visible
+                  ? "translateY(0) scale(1)"
+                  : "translateY(20px) scale(.95)",
+                filter: visible ? "blur(0)" : "blur(8px)",
+                transition:
+                  "opacity .28s ease, transform .28s ease, filter .28s ease",
+                pointerEvents: "none",
+              }}
+            >
+              {word}
+            </div>
+          );
+        })}
+
+        {/* FINAL */}
+        <div
+          className="intro-final"
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "100%",
+            fontFamily: '"Barlow Condensed", sans-serif',
+            fontWeight: 900,
+            fontSize: "clamp(2.6rem, 12vw, 4.8rem)",
+            lineHeight: 0.88,
+            letterSpacing: "-0.045em",
+            whiteSpace: "nowrap",
+            color: "#F4F1E8",
+            opacity: phase === 9 ? 1 : 0,
+            transform:
+              phase === 9
+                ? "translateY(0) scale(1)"
+                : "translateY(20px) scale(.95)",
+            filter: phase === 9 ? "blur(0)" : "blur(8px)",
+            transition:
+              "opacity .35s ease, transform .35s ease, filter .35s ease",
+          }}
+        >
+          THIS IS{" "}
+          <strong
+            style={{
+              color: "#C9A86A",
+              marginLeft: "10px",
+            }}
+          >
+            RADHE.
+          </strong>
         </div>
       </div>
 
-      <div className="intro-brand">
+      {/* BRAND */}
+      <div
+        className="intro-brand"
+        style={{
+          position: "absolute",
+          bottom: "28px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 70,
+          width: "100%",
+          textAlign: "center",
+          color: "#C9A86A",
+          fontSize: "9px",
+          fontWeight: 700,
+          letterSpacing: ".25em",
+        }}
+      >
         <strong>RADHE</strong>
-        <span>BOX CRICKET</span>
+        <span style={{ marginLeft: "8px" }}>
+          BOX CRICKET
+        </span>
       </div>
     </div>
   );
