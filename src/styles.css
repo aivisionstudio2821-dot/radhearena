@@ -1750,6 +1750,58 @@ a {
     scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    /* ================================
+   MOBILE INTRO FIX
+================================ */
+
+@media (max-width: 600px) {
+  .intro {
+    min-height: 100svh;
+    height: 100svh;
+    overflow: hidden;
+  }
+
+  .intro-copy {
+    width: 92%;
+    left: 4%;
+    right: 4%;
+    text-align: center;
+    z-index: 20;
+  }
+
+  .intro-line {
+    font-size: clamp(30px, 10vw, 52px);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    white-space: nowrap;
+  }
+
+  .intro-brand {
+    font-size: 13px;
+    letter-spacing: 0.25em;
+    bottom: 10%;
+  }
+
+  .intro-ball {
+    width: 72px;
+    height: 72px;
+  }
+
+  .intro-particles {
+    transform: scale(0.7);
+  }
+
+  .intro-grid {
+    opacity: 0.35;
+  }
+
+  /* Make sure intro text is never clipped on mobile */
+  .intro-copy,
+  .intro-line,
+  .intro-brand {
+    overflow: visible;
+  }
+}
     transition-duration: 0.01ms !important;
   }
 }
