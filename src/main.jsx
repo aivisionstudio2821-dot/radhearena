@@ -105,6 +105,36 @@ function CinematicIntro({ onDone }) {
   );
 }
 
+function PremiumCursor() {
+  const [point, setPoint] = useState({ x: -100, y: -100 });
+  const [active, setActive] = useState(false);
+
+  useEffect(() => {
+    const move = (e) => setPoint({ x: e.clientX, y: e.clientY });
+    const down = () => setActive(true);
+    const up = () => setActive(false);
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mousedown", down);
+    window.addEventListener("mouseup", up);
+    return () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mousedown", down);
+      window.removeEventListener("mouseup", up);
+    };
+  }, []);
+
+  return (
+    <div
+      className={`premium-cursor ${active ? "is-active" : ""}`}
+      style={{ left: point.x, top: point.y }}
+      aria-hidden="true"
+    >
+      <span className="cursor-crosshair" />
+      <span className="cursor-ball"><i /></span>
+    </div>
+  );
+}
+
 function App() {
   const [introDone, setIntroDone] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -436,7 +466,9 @@ function App() {
   return (
     <>
       {!introDone && <CinematicIntro onDone={() => setIntroDone(true)} />}
-      <div className="site">
+      <div className="site premium-site">
+
+      <PremiumCursor />
 
       {/* NAVBAR */}
 
@@ -534,276 +566,163 @@ function App() {
 
       <main>
 
-        {/* HERO */}
+        {/* PREMIUM HOME */}
 
-        <section
-          className="hero"
-          id="home"
-        >
+        <section className="premium-hero" id="home">
+          <div className="premium-hero-grid" />
+          <div className="premium-hero-glow glow-a" />
+          <div className="premium-hero-glow glow-b" />
 
-          <div className="hero-grid" />
+          <div className="premium-hero-content">
+            <div className="premium-live-row">
+              <span className="live-dot" />
+              <span>RADHE ARENA</span>
+              <b>AHMEDABAD</b>
+              <span className="live-line" />
+              <small>06:00 — 00:00</small>
+            </div>
 
-          <div className="hero-content">
-
-            <div className="eyebrow">
-              <span />
-              AHMEDABAD • BOX CRICKET
+            <div className="premium-kicker">
+              BOX CRICKET / MATCHDAY 24·7
             </div>
 
             <h1>
-              YOUR GAME.
-              <br />
-              <em>
-                YOUR NIGHT.
-              </em>
+              YOUR GAME.<br />
+              <span>YOUR NIGHT.</span>
             </h1>
 
-            <p>
-              Premium box cricket
-              for friends, teams
-              and serious game
-              nights.
+            <p className="premium-hero-copy">
+              A sharper pitch. A louder night. A better game.
+              Book your slot and bring the squad.
             </p>
 
-            <div className="hero-actions">
-
-              <button
-                className="gold-button"
-                onClick={() =>
-                  scrollTo("booking")
-                }
-              >
-                Book Your Slot
-                <ArrowRight size={18} />
+            <div className="premium-hero-actions">
+              <button className="premium-main-cta" onClick={() => scrollTo("booking")}>
+                BOOK YOUR GAME <ArrowRight size={18} />
               </button>
-
-              <button
-                className="outline-button"
-                onClick={() =>
-                  scrollTo("arena")
-                }
-              >
-                Explore Arena
+              <button className="premium-secondary-cta" onClick={() => scrollTo("arena")}>
+                EXPLORE THE ARENA
               </button>
-
             </div>
 
-            <div className="hero-points">
-
-              <span>
-                <Check size={15} />
-                Day & night slots
-              </span>
-
-              <span>
-                <Check size={15} />
-                Easy booking
-              </span>
-
-              <span>
-                <Check size={15} />
-                Team-ready arena
-              </span>
-
+            <div className="premium-hero-meta">
+              <span><Check size={14} /> DAY + NIGHT</span>
+              <span><Check size={14} /> LIVE AVAILABILITY</span>
+              <span><Check size={14} /> WHATSAPP CONFIRMATION</span>
             </div>
-
           </div>
 
-          <div
-            className="hero-ball"
-            aria-hidden="true"
-          >
-            <div className="ball-seam" />
+          <div className="premium-hero-stage" aria-hidden="true">
+            <div className="stage-ring ring-one" />
+            <div className="stage-ring ring-two" />
+            <div className="stage-pitch" />
+            <div className="stage-lines" />
+            <div className="premium-ball"><span /></div>
+            <div className="stage-shadow" />
+            <div className="stage-label">
+              <small>01 / 01</small>
+              <strong>ONE PITCH</strong>
+              <span>ENDLESS GAMES</span>
+            </div>
           </div>
 
-          <div className="hero-bottom">
-            <span>
-              06:00 AM — 12:00 AM
-            </span>
-
-            <span>
-              ONE PITCH • ENDLESS GAMES
-            </span>
+          <div className="premium-scroll-cue">
+            <span>SCROLL TO PLAY</span>
+            <i>↓</i>
           </div>
-
         </section>
 
-
-        {/* STATS */}
-
-        <section className="stats section">
-
+        <section className="premium-marquee" aria-label="Radhe highlights">
           <div>
-            <strong>
-              ₹800
-            </strong>
-
-            <span>
-              DAY / HOUR
-            </span>
+            <span>RADHE BOX CRICKET</span><b>✦</b>
+            <span>YOUR GAME. YOUR NIGHT.</span><b>✦</b>
+            <span>BOOK. PLAY. REPEAT.</span><b>✦</b>
+            <span>AHMEDABAD</span><b>✦</b>
           </div>
-
-          <div>
-            <strong>
-              ₹1100
-            </strong>
-
-            <span>
-              NIGHT / HOUR
-            </span>
-          </div>
-
-          <div>
-            <strong>
-              06 AM
-            </strong>
-
-            <span>
-              OPENING
-            </span>
-          </div>
-
-          <div>
-            <strong>
-              12 AM
-            </strong>
-
-            <span>
-              CLOSING
-            </span>
-          </div>
-
         </section>
 
+        <section className="premium-stats">
+          <div className="premium-stat-main">
+            <small>DAY RATE</small><strong>₹800</strong><span>/ HOUR · 06:00–17:00</span>
+          </div>
+          <div>
+            <small>NIGHT RATE</small><strong>₹1100</strong><span>/ HOUR · 17:00–00:00</span>
+          </div>
+          <div>
+            <small>OPEN</small><strong>18 HRS</strong><span>EVERY PLAYING DAY</span>
+          </div>
+          <div>
+            <small>FORMAT</small><strong>1 / 2 HR</strong><span>SINGLE OR DOUBLE SLOT</span>
+          </div>
+        </section>
 
-        {/* ARENA */}
-
-        <section
-          className="section"
-          id="arena"
-        >
-
-          <div className="section-heading">
-
-            <span className="eyebrow">
-              THE ARENA
-            </span>
-
-            <h2>
-              Built for{" "}
-              <em>
-                your game.
-              </em>
-            </h2>
-
+        <section className="premium-arena-section section" id="arena">
+          <div className="premium-section-head">
+            <div>
+              <span className="premium-kicker">THE RADHE STANDARD</span>
+              <h2>Built for the<br /><em>big moments.</em></h2>
+            </div>
             <p>
-              Everything you need
-              for a proper cricket
-              session — without
-              the hassle.
+              Not another generic turf page. Radhe is designed around the actual match —
+              quick booking, clear slots and a night worth remembering.
             </p>
-
           </div>
 
-          <div className="feature-grid">
+          <div className="premium-feature-grid">
+            <article className="premium-feature feature-large">
+              <span className="feature-index">01</span>
+              <Zap />
+              <h3>FAST<br /><em>BOOKING</em></h3>
+              <p>Pick a date, choose your duration, grab an available hour and send the request.</p>
+              <button onClick={() => scrollTo("booking")}>BOOK A SLOT <ArrowRight size={15} /></button>
+            </article>
 
-            <Feature
-              icon={<Zap />}
-              title="Fast Booking"
-              text="Choose your date, duration and exact playing slot in seconds."
-            />
+            <article className="premium-feature">
+              <span className="feature-index">02</span>
+              <Clock3 />
+              <h3>DAY<br /><em>TO NIGHT</em></h3>
+              <p>Morning sessions to late-night battles. The pitch stays ready until midnight.</p>
+            </article>
 
-            <Feature
-              icon={<Clock3 />}
-              title="Day + Night"
-              text="Early morning games or late-night battles — slots run till midnight."
-            />
+            <article className="premium-feature">
+              <span className="feature-index">03</span>
+              <Users />
+              <h3>BRING<br /><em>THE SQUAD</em></h3>
+              <p>Friends, classmates, office teams or the weekend crew — choose your game.</p>
+            </article>
 
-            <Feature
-              icon={<Users />}
-              title="Squad Ready"
-              text="Bring your friends, classmates, office team or weekend squad."
-            />
-
-            <Feature
-              icon={<Trophy />}
-              title="Game Night"
-              text="Turn a normal evening into a proper competitive cricket session."
-            />
-
+            <article className="premium-feature feature-wide">
+              <span className="feature-index">04</span>
+              <Trophy />
+              <div>
+                <h3>MAKE IT A<br /><em>GAME NIGHT.</em></h3>
+                <p>One pitch. One squad. Zero excuses. This is where the ordinary evening gets competitive.</p>
+              </div>
+              <div className="feature-stamp">R<br /><small>RADHE</small></div>
+            </article>
           </div>
-
         </section>
 
-
-        {/* ABOUT */}
-
-        <section className="section about-section">
-
-          <div className="about-copy">
-
-            <span className="eyebrow">
-              RADHE BOX CRICKET
-            </span>
-
-            <h2>
-              Work hard.
-              <br />
-              <em>
-                Play harder.
-              </em>
-            </h2>
-
+        <section className="premium-about section">
+          <div className="about-number">02</div>
+          <div className="premium-about-copy">
+            <span className="premium-kicker">WHY RADHE</span>
+            <h2>Work hard.<br /><em>Play harder.</em></h2>
             <p>
-              Radhe is made for
-              the nights when
-              your group just
-              wants to play.
-              No complicated
-              process.
+              You don't need another complicated booking process. You need a pitch, your people and a time that works.
+              That's it.
             </p>
-
-            <div className="about-list">
-
-              <span>
-                <Check />
-                Simple slot selection
-              </span>
-
-              <span>
-                <Check />
-                Single or double-hour booking
-              </span>
-
-              <span>
-                <Check />
-                WhatsApp confirmation
-              </span>
-
+            <div className="about-checks">
+              <span><Check /> Simple slot selection</span>
+              <span><Check /> Single or double-hour games</span>
+              <span><Check /> WhatsApp confirmation</span>
             </div>
-
           </div>
-
-          <div className="about-panel">
-
-            <span>
-              01
-            </span>
-
-            <strong>
-              ONE PITCH
-            </strong>
-
-            <b>
-              ENDLESS GAMES
-            </b>
-
-            <small>
-              RADHE BOX CRICKET
-            </small>
-
+          <div className="premium-about-card">
+            <div className="about-card-top"><span>RADHE / 2026</span><span>AHMEDABAD</span></div>
+            <div className="about-card-word">RADHE</div>
+            <div className="about-card-bottom"><span>ONE PITCH.</span><strong>ENDLESS GAMES.</strong></div>
           </div>
-
         </section>
 
 
@@ -814,25 +733,11 @@ function App() {
           id="booking"
         >
 
-          <div className="section-heading booking-heading">
-
-            <span className="eyebrow">
-              BOOK A SLOT
-            </span>
-
-            <h2>
-              Pick your{" "}
-              <em>
-                game time.
-              </em>
-            </h2>
-
-            <p>
-              No account required.
-              Select a slot and
-              send your request.
-            </p>
-
+          <div className="premium-booking-heading section-heading booking-heading">
+            <span className="premium-kicker">LIVE BOOKING</span>
+            <h2>Pick your <em>game time.</em></h2>
+            <p>No account. No waiting around. Choose your slot and send the request directly to Radhe.</p>
+            <div className="booking-heading-badge"><span /> LIVE AVAILABILITY</div>
           </div>
 
 
@@ -1291,7 +1196,7 @@ function App() {
         {/* CONTACT */}
 
         <section
-          className="section contact-section"
+          className="section contact-section premium-contact"
           id="contact"
         >
 
@@ -1470,127 +1375,177 @@ function Step({
 
 /* ADMIN */
 
-function AdminModal({ onClose }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [session, setSession] = useState(null);
-  const [bookings, setBookings] = useState([]);
-  const [blocked, setBlocked] = useState([]);
-  const [date, setDate] = useState(todayString());
-  const [startHour, setStartHour] = useState(18);
-  const [blockDuration, setBlockDuration] = useState(1);
-  const [reason, setReason] = useState("");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
+function AdminModal({
+  onClose,
+}) {
+  const [email, setEmail] =
+    useState("");
+
+  const [password, setPassword] =
+    useState("");
+
+  const [session, setSession] =
+    useState(null);
+
+  const [bookings, setBookings] =
+    useState([]);
+
+  const [blocked, setBlocked] =
+    useState([]);
+
+  const [date, setDate] =
+    useState(todayString());
+
+  const [startHour, setStartHour] =
+    useState(18);
+
+  const [blockDuration, setBlockDuration] =
+    useState(1);
+
+  const [reason, setReason] =
+    useState("");
+
+  const [error, setError] =
+    useState("");
+
+  const [busy, setBusy] =
+    useState(false);
 
   useEffect(() => {
+
     if (!supabase) return;
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        setSession(data.session);
-        loadAdminData();
-      }
-    });
+    supabase.auth
+      .getSession()
+      .then(
+        ({
+          data,
+        }) => {
+
+          if (data.session) {
+
+            setSession(
+              data.session
+            );
+
+            loadAdminData();
+          }
+
+        }
+      );
+
   }, []);
 
   async function login(e) {
+
     e.preventDefault();
-    if (!supabase) {
-      setError("Supabase is not configured.");
-      return;
-    }
 
     setError("");
     setBusy(true);
 
-    const { data, error: loginError } =
-      await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
+    const {
+      data,
+      error,
+    } =
+      await supabase.auth
+        .signInWithPassword({
+          email,
+          password,
+        });
 
     setBusy(false);
 
-    if (loginError) {
-      setError(loginError.message);
+    if (error) {
+
+      setError(
+        error.message
+      );
+
       return;
     }
 
-    setSession(data.session);
-    await loadAdminData();
+    setSession(
+      data.session
+    );
+
+    loadAdminData();
   }
 
   async function loadAdminData() {
-    if (!supabase) return;
 
-    setError("");
+    const [
+      bookingsResult,
+      blockedResult,
+    ] =
+      await Promise.all([
 
-    const [bookingsResult, blockedResult] = await Promise.all([
-      supabase
-        .from("bookings")
-        .select("*")
-        .order("date", { ascending: true })
-        .order("start_time", { ascending: true })
-        .limit(100),
-      supabase
-        .from("blocked_slots")
-        .select("*")
-        .order("date", { ascending: true })
-        .order("start_time", { ascending: true })
-        .limit(100),
-    ]);
+        supabase
+          .from("bookings")
+          .select("*")
+          .order("date", {
+            ascending: true,
+          })
+          .order("start_time", {
+            ascending: true,
+          })
+          .limit(100),
 
-    if (bookingsResult.error) {
-      setError(bookingsResult.error.message);
-    } else if (blockedResult.error) {
-      setError(blockedResult.error.message);
-    }
+        supabase
+          .from("blocked_slots")
+          .select("*")
+          .order("date", {
+            ascending: true,
+          })
+          .limit(100),
 
-    setBookings(bookingsResult.data || []);
-    setBlocked(blockedResult.data || []);
+      ]);
+
+    setBookings(
+      bookingsResult.data || []
+    );
+
+    setBlocked(
+      blockedResult.data || []
+    );
   }
 
-  async function updateBooking(id, status) {
-    if (!supabase) return;
+  async function updateBooking(
+    id,
+    status
+  ) {
 
-    setBusy(true);
-    setError("");
-
-    const { error: updateError } = await supabase
+    await supabase
       .from("bookings")
-      .update({ status })
+      .update({
+        status,
+      })
       .eq("id", id);
-
-    setBusy(false);
-
-    if (updateError) {
-      setError(updateError.message);
-      return;
-    }
 
     await loadAdminData();
   }
 
   async function blockSlot(e) {
-    e.preventDefault();
-    if (!supabase) return;
 
-    setError("");
+    e.preventDefault();
+
+    const start =
+      `${String(startHour).padStart(
+        2,
+        "0"
+      )}:00:00`;
+
+    const endHour = startHour + blockDuration;
+
+    const end =
+      `${String(endHour).padStart(
+        2,
+        "0"
+      )}:00:00`;
 
     if (startHour + blockDuration > 24) {
-      setError("A 2-hour block cannot start at 11:00 PM.");
+      setError("Block duration cannot go beyond midnight.");
       return;
     }
-
-    const start = `${String(startHour).padStart(2, "0")}:00:00`;
-    const endHour = startHour + blockDuration;
-    const end =
-      endHour === 24
-        ? "23:59:59"
-        : `${String(endHour).padStart(2, "0")}:00:00`;
-
-    setBusy(true);
 
     const { error: blockError } = await supabase
       .from("blocked_slots")
@@ -1598,10 +1553,10 @@ function AdminModal({ onClose }) {
         date,
         start_time: start,
         end_time: end,
-        reason: reason.trim() || "Blocked by admin",
+        reason:
+          reason ||
+          "Blocked by admin",
       });
-
-    setBusy(false);
 
     if (blockError) {
       setError(blockError.message);
@@ -1609,340 +1564,368 @@ function AdminModal({ onClose }) {
     }
 
     setReason("");
+    setError("");
+
     await loadAdminData();
   }
 
   async function unblock(id) {
-    if (!supabase) return;
 
-    setBusy(true);
-    setError("");
-
-    const { error: deleteError } = await supabase
+    await supabase
       .from("blocked_slots")
       .delete()
       .eq("id", id);
-
-    setBusy(false);
-
-    if (deleteError) {
-      setError(deleteError.message);
-      return;
-    }
 
     await loadAdminData();
   }
 
   async function logout() {
-    if (supabase) await supabase.auth.signOut();
+
+    await supabase.auth
+      .signOut();
+
     setSession(null);
   }
 
-  const today = todayString();
-  const todayBookings = bookings.filter((b) => b.date === today);
-  const pendingCount = bookings.filter((b) => b.status === "Pending").length;
-  const approvedCount = bookings.filter((b) => b.status === "Approved").length;
-  const rejectedCount = bookings.filter((b) => b.status === "Rejected").length;
-  const revenue = bookings
-    .filter((b) => b.status === "Approved")
-    .reduce((sum, b) => sum + Number(b.total_price || 0), 0);
-
-  const statusClass = (status) =>
-    String(status || "").toLowerCase().replace(/\s+/g, "-");
-
   return (
     <div className="modal-backdrop">
-      <div className="admin-modal admin-command-center">
-        <div className="command-header">
-          <div className="command-title">
-            <div className="command-kicker">RADHE COMMAND CENTER</div>
-            <h2>ARENA CONTROL</h2>
-            <p>Manage bookings, availability & arena operations.</p>
+
+      <div className="admin-modal">
+
+        <div className="modal-head">
+
+          <div>
+
+            <span className="eyebrow">
+              RADHE COMMAND CENTER
+            </span>
+
+            <h2>
+              Admin
+            </h2>
+
           </div>
 
-          <div className="command-header-actions">
-            {session && (
-              <div className="admin-online">
-                <span /> ONLINE
-              </div>
-            )}
-            <button className="admin-close" onClick={onClose} aria-label="Close admin">
-              <X size={22} />
-            </button>
-          </div>
+          <button
+            onClick={onClose}
+          >
+            <X />
+          </button>
+
         </div>
 
-        {!session ? (
-          <form className="admin-login premium-login" onSubmit={login}>
-            <div className="login-mark"><span>R</span></div>
 
-            <div>
-              <div className="command-kicker">SECURE ACCESS</div>
-              <h3>Welcome back.</h3>
-              <p>Sign in to manage Radhe Box Cricket.</p>
-            </div>
+        {!session ? (
+
+          <form
+            className="admin-login"
+            onSubmit={login}
+          >
 
             <label>
-              EMAIL
+              Email
+
               <input
                 type="email"
                 value={email}
-                placeholder="admin@radhearena.in"
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) =>
+                  setEmail(
+                    e.target.value
+                  )
+                }
                 required
               />
+
             </label>
 
             <label>
-              PASSWORD
+              Password
+
               <input
                 type="password"
                 value={password}
-                placeholder="••••••••••••"
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) =>
+                  setPassword(
+                    e.target.value
+                  )
+                }
                 required
               />
+
             </label>
 
-            {error && <div className="admin-error">{error}</div>}
+            {error && (
+              <div className="form-message error">
+                {error}
+              </div>
+            )}
 
-            <button className="admin-primary-button" disabled={busy}>
-              {busy ? "AUTHENTICATING..." : "ENTER COMMAND CENTER"}
-              <ShieldCheck size={18} />
+            <button
+              className="submit-button"
+              disabled={busy}
+            >
+              {busy
+                ? "LOGGING IN..."
+                : "LOGIN"}
+
+              <ShieldCheck
+                size={18}
+              />
             </button>
+
           </form>
+
         ) : (
-          <div className="admin-dashboard">
-            <div className="dashboard-bar">
-              <div>
-                <span className="dashboard-label">ARENA OPERATIONS</span>
-                <strong>
-                  {todayBookings.length} booking{todayBookings.length !== 1 ? "s" : ""} today
-                </strong>
-              </div>
 
-              <div className="dashboard-actions">
-                <button className="admin-refresh" onClick={loadAdminData} disabled={busy}>
-                  ↻ Refresh
-                </button>
-                <button className="admin-logout" onClick={logout}>Logout</button>
-              </div>
+          <div className="admin-content">
+
+            <div className="admin-top">
+
+              <strong>
+                Bookings
+              </strong>
+
+              <button
+                onClick={logout}
+              >
+                Logout
+              </button>
+
             </div>
 
-            {error && <div className="admin-error" style={{ marginBottom: 14 }}>{error}</div>}
 
-            <div className="command-stats">
-              <div className="command-stat">
-                <span>TODAY</span>
-                <strong>{todayBookings.length}</strong>
-                <small>Bookings</small>
-              </div>
-              <div className="command-stat">
-                <span>PENDING</span>
-                <strong>{pendingCount}</strong>
-                <small>Need action</small>
-              </div>
-              <div className="command-stat">
-                <span>APPROVED</span>
-                <strong>{approvedCount}</strong>
-                <small>Confirmed</small>
-              </div>
-              <div className="command-stat command-stat-revenue">
-                <span>REVENUE</span>
-                <strong>₹{revenue.toLocaleString("en-IN")}</strong>
-                <small>Approved bookings</small>
-              </div>
-            </div>
+            <div className="admin-block">
 
-            <div className="command-grid">
-              <section className="command-panel bookings-panel">
-                <div className="panel-heading">
-                  <div>
-                    <span>BOOKING QUEUE</span>
-                    <h3>Recent bookings</h3>
-                  </div>
-                  <div className="panel-count">{bookings.length}</div>
-                </div>
+              <h3>
+                Block a slot
+              </h3>
 
-                {bookings.length === 0 ? (
-                  <div className="empty-command">
-                    <span>NO BOOKINGS</span>
-                    <p>New booking requests will appear here.</p>
-                  </div>
-                ) : (
-                  <div className="booking-command-list">
-                    {bookings.map((booking) => (
-                      <div className="booking-command-card" key={booking.id}>
-                        <div className="booking-card-main">
-                          <div className="booking-card-time">
-                            <strong>{booking.start_time?.slice(0, 5) || "—"}</strong>
-                            <span>{booking.duration_hours || 1}h</span>
-                          </div>
+              <form
+                onSubmit={blockSlot}
+                className="block-form"
+              >
 
-                          <div className="booking-card-info">
-                            <strong>{booking.name}</strong>
-                            <span>
-                              {formatDate(booking.date)} · {booking.players || 0} players
-                            </span>
-                            <small>{booking.phone}</small>
-                          </div>
-                        </div>
+                <input
+                  type="date"
+                  value={date}
+                  min={todayString()}
+                  onChange={(e) =>
+                    setDate(
+                      e.target.value
+                    )
+                  }
+                />
 
-                        <div className="booking-card-side">
-                          <div className="booking-price">
-                            ₹{Number(booking.total_price || 0).toLocaleString("en-IN")}
-                          </div>
-
-                          <span className={`command-status ${statusClass(booking.status)}`}>
-                            {booking.status}
-                          </span>
-
-                          <div className="booking-actions">
-                            {booking.status !== "Approved" && (
-                              <button
-                                className="approve-button"
-                                onClick={() => updateBooking(booking.id, "Approved")}
-                                disabled={busy}
-                              >
-                                <Check size={14} /> APPROVE
-                              </button>
-                            )}
-                            {booking.status !== "Rejected" && (
-                              <button
-                                className="reject-button"
-                                onClick={() => updateBooking(booking.id, "Rejected")}
-                                disabled={busy}
-                              >
-                                REJECT
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              <section className="command-panel block-panel">
-                <div className="panel-heading">
-                  <div>
-                    <span>AVAILABILITY CONTROL</span>
-                    <h3>Block a slot</h3>
-                  </div>
-                  <div className="block-icon">×</div>
-                </div>
-
-                <p className="panel-description">
-                  Temporarily remove a time slot from public booking.
-                </p>
-
-                <form className="command-block-form" onSubmit={blockSlot}>
-                  <label>
-                    DATE
-                    <input
-                      type="date"
-                      value={date}
-                      min={today}
-                      onChange={(e) => setDate(e.target.value)}
-                    />
-                  </label>
-
-                  <label>
-                    START TIME
-                    <select
-                      value={startHour}
-                      onChange={(e) => {
-                        const next = Number(e.target.value);
-                        setStartHour(next);
-                        if (next >= 23) setBlockDuration(1);
-                      }}
-                    >
-                      {slots.map((h) => (
-                        <option key={h} value={h}>{hourLabel(h)}</option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label>
-                    DURATION
-                    <select
-                      value={blockDuration}
-                      onChange={(e) => setBlockDuration(Number(e.target.value))}
-                    >
-                      <option value={1}>1 HOUR</option>
-                      {startHour < 23 && <option value={2}>2 HOURS</option>}
-                    </select>
-                  </label>
-
-                  <label>
-                    REASON
-                    <input
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      placeholder="Maintenance, private event..."
-                    />
-                  </label>
-
-                  <button className="admin-primary-button block-submit" disabled={busy}>
-                    {busy ? "BLOCKING..." : "BLOCK SLOT"}
-                  </button>
-                </form>
-              </section>
-            </div>
-
-            <section className="command-panel blocked-panel">
-              <div className="panel-heading">
-                <div>
-                  <span>AVAILABILITY CONTROL</span>
-                  <h3>Blocked slots</h3>
-                </div>
-                <div className="panel-count">{blocked.length}</div>
-              </div>
-
-              {blocked.length === 0 ? (
-                <div className="empty-command compact">
-                  <span>ALL CLEAR</span>
-                  <p>No manually blocked slots.</p>
-                </div>
-              ) : (
-                <div className="blocked-command-list">
-                  {blocked.map((item) => (
-                    <div className="blocked-command-card" key={item.id}>
-                      <div className="blocked-date">
-                        <strong>{formatDate(item.date)}</strong>
-                        <span>
-                          {item.start_time?.slice(0, 5)} — {item.end_time?.slice(0, 5)}
-                        </span>
-                      </div>
-
-                      <div className="blocked-reason">
-                        <span>REASON</span>
-                        <strong>{item.reason || "Blocked by admin"}</strong>
-                      </div>
-
-                      <button
-                        className="unblock-button"
-                        onClick={() => unblock(item.id)}
-                        disabled={busy}
+                <select
+                  value={startHour}
+                  onChange={(e) =>
+                    setStartHour(
+                      Number(
+                        e.target.value
+                      )
+                    )
+                  }
+                >
+                  {slots.map(
+                    (h) => (
+                      <option
+                        key={h}
+                        value={h}
                       >
-                        UNBLOCK
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
+                        {hourLabel(h)}
+                      </option>
+                    )
+                  )}
+                </select>
 
-            <div className="command-footer">
-              <span>RADHE BOX CRICKET</span>
-              <span>
-                {approvedCount} approved · {pendingCount} pending · {rejectedCount} rejected
-              </span>
+                <select
+                  value={blockDuration}
+                  onChange={(e) =>
+                    setBlockDuration(Number(e.target.value))
+                  }
+                >
+                  <option value={1}>1 hour</option>
+                  <option value={2}>2 hours</option>
+                </select>
+
+                <input
+                  value={reason}
+                  onChange={(e) =>
+                    setReason(
+                      e.target.value
+                    )
+                  }
+                  placeholder="Reason"
+                />
+
+                <button className="gold-button">
+                  Block
+                </button>
+
+              </form>
+
             </div>
+
+
+            <div className="admin-list">
+
+              {bookings.map(
+                (booking) => (
+
+                  <div
+                    className="admin-row"
+                    key={booking.id}
+                  >
+
+                    <div>
+
+                      <strong>
+                        {booking.name}
+                      </strong>
+
+                      <span>
+                        {booking.date}
+                        {" • "}
+                        {booking.start_time?.slice(
+                          0,
+                          5
+                        )}
+                        {" • "}
+                        {booking.duration_hours ||
+                          1}
+                        h
+                        {" • "}
+                        {booking.players}
+                        {" players"}
+                      </span>
+
+                      <small>
+                        {booking.phone}
+                        {" • ₹"}
+                        {Number(
+                          booking.total_price ||
+                            0
+                        ).toLocaleString(
+                          "en-IN"
+                        )}
+                      </small>
+
+                    </div>
+
+
+                    <div className="admin-status">
+
+                      <span
+                        className={`status ${String(
+                          booking.status
+                        ).toLowerCase()}`}
+                      >
+                        {booking.status}
+                      </span>
+
+                      {booking.status !==
+                        "Approved" && (
+                        <button
+                          onClick={() =>
+                            updateBooking(
+                              booking.id,
+                              "Approved"
+                            )
+                          }
+                        >
+                          <Check
+                            size={15}
+                          />
+                        </button>
+                      )}
+
+                      {booking.status !==
+                        "Rejected" && (
+                        <button
+                          onClick={() =>
+                            updateBooking(
+                              booking.id,
+                              "Rejected"
+                            )
+                          }
+                        >
+                          <X
+                            size={15}
+                          />
+                        </button>
+                      )}
+
+                    </div>
+
+                  </div>
+
+                )
+              )}
+
+            </div>
+
+
+            <div className="admin-list">
+
+              <h3>
+                Blocked slots
+              </h3>
+
+              {blocked.map(
+                (item) => (
+
+                  <div
+                    className="admin-row"
+                    key={item.id}
+                  >
+
+                    <div>
+
+                      <strong>
+                        {item.date}
+                      </strong>
+
+                      <span>
+                        {item.start_time?.slice(
+                          0,
+                          5
+                        )}
+                        {" — "}
+                        {item.end_time?.slice(
+                          0,
+                          5
+                        )}
+                      </span>
+
+                      <small>
+                        {item.reason}
+                      </small>
+
+                    </div>
+
+                    <button
+                      onClick={() =>
+                        unblock(
+                          item.id
+                        )
+                      }
+                    >
+                      Unblock
+                    </button>
+
+                  </div>
+
+                )
+              )}
+
+            </div>
+
           </div>
+
         )}
+
       </div>
+
     </div>
   );
 }
