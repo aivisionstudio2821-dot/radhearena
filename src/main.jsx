@@ -20,8 +20,8 @@ import "./styles.css";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-const WHATSAPP_NUMBER =
-  import.meta.env.VITE_WHATSAPP_NUMBER || "917046706848";
+const ANKIT_PHONE = "7046706848";
+const BOOKING_WHATSAPP_NUMBER = "918160885601";
 
 const supabase =
   SUPABASE_URL && SUPABASE_KEY
@@ -108,6 +108,31 @@ function CinematicIntro({ onDone }) {
 function App() {
   const [introDone, setIntroDone] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const updateScrollBall = () => {
+      const hero = document.getElementById("home");
+      if (!hero) return;
+
+      const rect = hero.getBoundingClientRect();
+      const viewport = window.innerHeight || 1;
+      const progress = Math.min(
+        1,
+        Math.max(0, (viewport - rect.top) / (viewport + rect.height))
+      );
+
+      hero.style.setProperty("--scroll-progress", progress.toFixed(4));
+    };
+
+    updateScrollBall();
+    window.addEventListener("scroll", updateScrollBall, { passive: true });
+    window.addEventListener("resize", updateScrollBall);
+
+    return () => {
+      window.removeEventListener("scroll", updateScrollBall);
+      window.removeEventListener("resize", updateScrollBall);
+    };
+  }, []);
 
   const [selectedDate, setSelectedDate] =
     useState(todayString());
@@ -394,7 +419,7 @@ function App() {
     });
 
     window.open(
-      `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+      `https://wa.me/${BOOKING_WHATSAPP_NUMBER}?text=${encodeURIComponent(
         whatsappText
       )}`,
       "_blank",
@@ -1296,12 +1321,19 @@ function App() {
           <div className="contact-actions">
 
             <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}`}
+              href={`https://wa.me/${BOOKING_WHATSAPP_NUMBER}`}
               target="_blank"
               rel="noreferrer"
             >
               <Phone size={18} />
-              WhatsApp
+              WhatsApp Booking
+            </a>
+
+            <a
+              href={`tel:${ANKIT_PHONE}`}
+            >
+              <Phone size={18} />
+              Ankit: {ANKIT_PHONE}
             </a>
 
             <a
@@ -1462,6 +1494,9 @@ function AdminModal({
   const [startHour, setStartHour] =
     useState(18);
 
+  const [blockDuration, setBlockDuration] =
+    useState(1);
+
   const [reason, setReason] =
     useState("");
 
@@ -1594,13 +1629,20 @@ function AdminModal({
         "0"
       )}:00:00`;
 
+    const endHour = startHour + blockDuration;
+
     const end =
-      `${String(startHour + 1).padStart(
+      `${String(endHour).padStart(
         2,
         "0"
       )}:00:00`;
 
-    await supabase
+    if (startHour + blockDuration > 24) {
+      setError("Block duration cannot go beyond midnight.");
+      return;
+    }
+
+    const { error: blockError } = await supabase
       .from("blocked_slots")
       .insert({
         date,
@@ -1611,7 +1653,13 @@ function AdminModal({
           "Blocked by admin",
       });
 
+    if (blockError) {
+      setError(blockError.message);
+      return;
+    }
+
     setReason("");
+    setError("");
 
     await loadAdminData();
   }
@@ -1783,6 +1831,16 @@ function AdminModal({
                       </option>
                     )
                   )}
+                </select>
+
+                <select
+                  value={blockDuration}
+                  onChange={(e) =>
+                    setBlockDuration(Number(e.target.value))
+                  }
+                >
+                  <option value={1}>1 hour</option>
+                  <option value={2}>2 hours</option>
                 </select>
 
                 <input
