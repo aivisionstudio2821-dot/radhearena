@@ -64,7 +64,49 @@ const formatDate = (date) =>
     month: "short",
   });
 
+
+/* =========================================================
+   CINEMATIC INTRO
+========================================================= */
+
+function CinematicIntro({ onDone }) {
+  useEffect(() => {
+    const timer = setTimeout(() => onDone(), 5600);
+    return () => clearTimeout(timer);
+  }, [onDone]);
+
+  return (
+    <div className="cinematic-intro" aria-label="Radhe Box Cricket intro">
+      <div className="intro-noise" />
+      <div className="intro-ball-wrap">
+        <div className="intro-ball">
+          <span className="intro-ball-seam" />
+        </div>
+      </div>
+
+      <div className="intro-copy">
+        <div className="intro-line line-1">YOUR GAME.</div>
+        <div className="intro-line line-2">YOUR NIGHT.</div>
+        <div className="intro-line line-3">WORK HARD.</div>
+        <div className="intro-line line-4">PLAY HARDER.</div>
+        <div className="intro-line line-5">ONE PITCH.</div>
+        <div className="intro-line line-6">ENDLESS GAMES.</div>
+        <div className="intro-line line-7">NO EXCUSES.</div>
+        <div className="intro-line line-8">JUST PLAY.</div>
+        <div className="intro-final">THIS IS RADHE.</div>
+      </div>
+
+      <div className="intro-flash" />
+      <div className="intro-brand">
+        <span className="brand-mark">R</span>
+        <span>RADHE BOX CRICKET</span>
+      </div>
+    </div>
+  );
+}
+
 function App() {
+  const [introDone, setIntroDone] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const [selectedDate, setSelectedDate] =
@@ -367,7 +409,9 @@ function App() {
   }
 
   return (
-    <div className="site">
+    <>
+      {!introDone && <CinematicIntro onDone={() => setIntroDone(true)} />}
+      <div className="site">
 
       {/* NAVBAR */}
 
@@ -1330,7 +1374,8 @@ function App() {
         />
       )}
 
-    </div>
+      </div>
+    </>
   );
 }
 
