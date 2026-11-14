@@ -1470,177 +1470,127 @@ function Step({
 
 /* ADMIN */
 
-function AdminModal({
-  onClose,
-}) {
-  const [email, setEmail] =
-    useState("");
-
-  const [password, setPassword] =
-    useState("");
-
-  const [session, setSession] =
-    useState(null);
-
-  const [bookings, setBookings] =
-    useState([]);
-
-  const [blocked, setBlocked] =
-    useState([]);
-
-  const [date, setDate] =
-    useState(todayString());
-
-  const [startHour, setStartHour] =
-    useState(18);
-
-  const [blockDuration, setBlockDuration] =
-    useState(1);
-
-  const [reason, setReason] =
-    useState("");
-
-  const [error, setError] =
-    useState("");
-
-  const [busy, setBusy] =
-    useState(false);
+function AdminModal({ onClose }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [session, setSession] = useState(null);
+  const [bookings, setBookings] = useState([]);
+  const [blocked, setBlocked] = useState([]);
+  const [date, setDate] = useState(todayString());
+  const [startHour, setStartHour] = useState(18);
+  const [blockDuration, setBlockDuration] = useState(1);
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-
     if (!supabase) return;
 
-    supabase.auth
-      .getSession()
-      .then(
-        ({
-          data,
-        }) => {
-
-          if (data.session) {
-
-            setSession(
-              data.session
-            );
-
-            loadAdminData();
-          }
-
-        }
-      );
-
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        setSession(data.session);
+        loadAdminData();
+      }
+    });
   }, []);
 
   async function login(e) {
-
     e.preventDefault();
+    if (!supabase) {
+      setError("Supabase is not configured.");
+      return;
+    }
 
     setError("");
     setBusy(true);
 
-    const {
-      data,
-      error,
-    } =
-      await supabase.auth
-        .signInWithPassword({
-          email,
-          password,
-        });
+    const { data, error: loginError } =
+      await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
     setBusy(false);
 
-    if (error) {
-
-      setError(
-        error.message
-      );
-
+    if (loginError) {
+      setError(loginError.message);
       return;
     }
 
-    setSession(
-      data.session
-    );
-
-    loadAdminData();
+    setSession(data.session);
+    await loadAdminData();
   }
 
   async function loadAdminData() {
+    if (!supabase) return;
 
-    const [
-      bookingsResult,
-      blockedResult,
-    ] =
-      await Promise.all([
+    setError("");
 
-        supabase
-          .from("bookings")
-          .select("*")
-          .order("date", {
-            ascending: true,
-          })
-          .order("start_time", {
-            ascending: true,
-          })
-          .limit(100),
+    const [bookingsResult, blockedResult] = await Promise.all([
+      supabase
+        .from("bookings")
+        .select("*")
+        .order("date", { ascending: true })
+        .order("start_time", { ascending: true })
+        .limit(100),
+      supabase
+        .from("blocked_slots")
+        .select("*")
+        .order("date", { ascending: true })
+        .order("start_time", { ascending: true })
+        .limit(100),
+    ]);
 
-        supabase
-          .from("blocked_slots")
-          .select("*")
-          .order("date", {
-            ascending: true,
-          })
-          .limit(100),
+    if (bookingsResult.error) {
+      setError(bookingsResult.error.message);
+    } else if (blockedResult.error) {
+      setError(blockedResult.error.message);
+    }
 
-      ]);
-
-    setBookings(
-      bookingsResult.data || []
-    );
-
-    setBlocked(
-      blockedResult.data || []
-    );
+    setBookings(bookingsResult.data || []);
+    setBlocked(blockedResult.data || []);
   }
 
-  async function updateBooking(
-    id,
-    status
-  ) {
+  async function updateBooking(id, status) {
+    if (!supabase) return;
 
-    await supabase
+    setBusy(true);
+    setError("");
+
+    const { error: updateError } = await supabase
       .from("bookings")
-      .update({
-        status,
-      })
+      .update({ status })
       .eq("id", id);
+
+    setBusy(false);
+
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
 
     await loadAdminData();
   }
 
   async function blockSlot(e) {
-
     e.preventDefault();
+    if (!supabase) return;
 
-    const start =
-      `${String(startHour).padStart(
-        2,
-        "0"
-      )}:00:00`;
-
-    const endHour = startHour + blockDuration;
-
-    const end =
-      `${String(endHour).padStart(
-        2,
-        "0"
-      )}:00:00`;
+    setError("");
 
     if (startHour + blockDuration > 24) {
-      setError("Block duration cannot go beyond midnight.");
+      setError("A 2-hour block cannot start at 11:00 PM.");
       return;
     }
+
+    const start = `${String(startHour).padStart(2, "0")}:00:00`;
+    const endHour = startHour + blockDuration;
+    const end =
+      endHour === 24
+        ? "23:59:59"
+        : `${String(endHour).padStart(2, "0")}:00:00`;
+
+    setBusy(true);
 
     const { error: blockError } = await supabase
       .from("blocked_slots")
@@ -1648,10 +1598,10 @@ function AdminModal({
         date,
         start_time: start,
         end_time: end,
-        reason:
-          reason ||
-          "Blocked by admin",
+        reason: reason.trim() || "Blocked by admin",
       });
+
+    setBusy(false);
 
     if (blockError) {
       setError(blockError.message);
@@ -1659,368 +1609,340 @@ function AdminModal({
     }
 
     setReason("");
-    setError("");
-
     await loadAdminData();
   }
 
   async function unblock(id) {
+    if (!supabase) return;
 
-    await supabase
+    setBusy(true);
+    setError("");
+
+    const { error: deleteError } = await supabase
       .from("blocked_slots")
       .delete()
       .eq("id", id);
+
+    setBusy(false);
+
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
 
     await loadAdminData();
   }
 
   async function logout() {
-
-    await supabase.auth
-      .signOut();
-
+    if (supabase) await supabase.auth.signOut();
     setSession(null);
   }
 
+  const today = todayString();
+  const todayBookings = bookings.filter((b) => b.date === today);
+  const pendingCount = bookings.filter((b) => b.status === "Pending").length;
+  const approvedCount = bookings.filter((b) => b.status === "Approved").length;
+  const rejectedCount = bookings.filter((b) => b.status === "Rejected").length;
+  const revenue = bookings
+    .filter((b) => b.status === "Approved")
+    .reduce((sum, b) => sum + Number(b.total_price || 0), 0);
+
+  const statusClass = (status) =>
+    String(status || "").toLowerCase().replace(/\s+/g, "-");
+
   return (
     <div className="modal-backdrop">
-
-      <div className="admin-modal">
-
-        <div className="modal-head">
-
-          <div>
-
-            <span className="eyebrow">
-              RADHE COMMAND CENTER
-            </span>
-
-            <h2>
-              Admin
-            </h2>
-
+      <div className="admin-modal admin-command-center">
+        <div className="command-header">
+          <div className="command-title">
+            <div className="command-kicker">RADHE COMMAND CENTER</div>
+            <h2>ARENA CONTROL</h2>
+            <p>Manage bookings, availability & arena operations.</p>
           </div>
 
-          <button
-            onClick={onClose}
-          >
-            <X />
-          </button>
-
+          <div className="command-header-actions">
+            {session && (
+              <div className="admin-online">
+                <span /> ONLINE
+              </div>
+            )}
+            <button className="admin-close" onClick={onClose} aria-label="Close admin">
+              <X size={22} />
+            </button>
+          </div>
         </div>
 
-
         {!session ? (
+          <form className="admin-login premium-login" onSubmit={login}>
+            <div className="login-mark"><span>R</span></div>
 
-          <form
-            className="admin-login"
-            onSubmit={login}
-          >
+            <div>
+              <div className="command-kicker">SECURE ACCESS</div>
+              <h3>Welcome back.</h3>
+              <p>Sign in to manage Radhe Box Cricket.</p>
+            </div>
 
             <label>
-              Email
-
+              EMAIL
               <input
                 type="email"
                 value={email}
-                onChange={(e) =>
-                  setEmail(
-                    e.target.value
-                  )
-                }
+                placeholder="admin@radhearena.in"
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
-
             </label>
 
             <label>
-              Password
-
+              PASSWORD
               <input
                 type="password"
                 value={password}
-                onChange={(e) =>
-                  setPassword(
-                    e.target.value
-                  )
-                }
+                placeholder="••••••••••••"
+                onChange={(e) => setPassword(e.target.value)}
                 required
               />
-
             </label>
 
-            {error && (
-              <div className="form-message error">
-                {error}
-              </div>
-            )}
+            {error && <div className="admin-error">{error}</div>}
 
-            <button
-              className="submit-button"
-              disabled={busy}
-            >
-              {busy
-                ? "LOGGING IN..."
-                : "LOGIN"}
-
-              <ShieldCheck
-                size={18}
-              />
+            <button className="admin-primary-button" disabled={busy}>
+              {busy ? "AUTHENTICATING..." : "ENTER COMMAND CENTER"}
+              <ShieldCheck size={18} />
             </button>
-
           </form>
-
         ) : (
+          <div className="admin-dashboard">
+            <div className="dashboard-bar">
+              <div>
+                <span className="dashboard-label">ARENA OPERATIONS</span>
+                <strong>
+                  {todayBookings.length} booking{todayBookings.length !== 1 ? "s" : ""} today
+                </strong>
+              </div>
 
-          <div className="admin-content">
-
-            <div className="admin-top">
-
-              <strong>
-                Bookings
-              </strong>
-
-              <button
-                onClick={logout}
-              >
-                Logout
-              </button>
-
-            </div>
-
-
-            <div className="admin-block">
-
-              <h3>
-                Block a slot
-              </h3>
-
-              <form
-                onSubmit={blockSlot}
-                className="block-form"
-              >
-
-                <input
-                  type="date"
-                  value={date}
-                  min={todayString()}
-                  onChange={(e) =>
-                    setDate(
-                      e.target.value
-                    )
-                  }
-                />
-
-                <select
-                  value={startHour}
-                  onChange={(e) =>
-                    setStartHour(
-                      Number(
-                        e.target.value
-                      )
-                    )
-                  }
-                >
-                  {slots.map(
-                    (h) => (
-                      <option
-                        key={h}
-                        value={h}
-                      >
-                        {hourLabel(h)}
-                      </option>
-                    )
-                  )}
-                </select>
-
-                <select
-                  value={blockDuration}
-                  onChange={(e) =>
-                    setBlockDuration(Number(e.target.value))
-                  }
-                >
-                  <option value={1}>1 hour</option>
-                  <option value={2}>2 hours</option>
-                </select>
-
-                <input
-                  value={reason}
-                  onChange={(e) =>
-                    setReason(
-                      e.target.value
-                    )
-                  }
-                  placeholder="Reason"
-                />
-
-                <button className="gold-button">
-                  Block
+              <div className="dashboard-actions">
+                <button className="admin-refresh" onClick={loadAdminData} disabled={busy}>
+                  ↻ Refresh
                 </button>
-
-              </form>
-
+                <button className="admin-logout" onClick={logout}>Logout</button>
+              </div>
             </div>
 
+            {error && <div className="admin-error" style={{ marginBottom: 14 }}>{error}</div>}
 
-            <div className="admin-list">
+            <div className="command-stats">
+              <div className="command-stat">
+                <span>TODAY</span>
+                <strong>{todayBookings.length}</strong>
+                <small>Bookings</small>
+              </div>
+              <div className="command-stat">
+                <span>PENDING</span>
+                <strong>{pendingCount}</strong>
+                <small>Need action</small>
+              </div>
+              <div className="command-stat">
+                <span>APPROVED</span>
+                <strong>{approvedCount}</strong>
+                <small>Confirmed</small>
+              </div>
+              <div className="command-stat command-stat-revenue">
+                <span>REVENUE</span>
+                <strong>₹{revenue.toLocaleString("en-IN")}</strong>
+                <small>Approved bookings</small>
+              </div>
+            </div>
 
-              {bookings.map(
-                (booking) => (
-
-                  <div
-                    className="admin-row"
-                    key={booking.id}
-                  >
-
-                    <div>
-
-                      <strong>
-                        {booking.name}
-                      </strong>
-
-                      <span>
-                        {booking.date}
-                        {" • "}
-                        {booking.start_time?.slice(
-                          0,
-                          5
-                        )}
-                        {" • "}
-                        {booking.duration_hours ||
-                          1}
-                        h
-                        {" • "}
-                        {booking.players}
-                        {" players"}
-                      </span>
-
-                      <small>
-                        {booking.phone}
-                        {" • ₹"}
-                        {Number(
-                          booking.total_price ||
-                            0
-                        ).toLocaleString(
-                          "en-IN"
-                        )}
-                      </small>
-
-                    </div>
-
-
-                    <div className="admin-status">
-
-                      <span
-                        className={`status ${String(
-                          booking.status
-                        ).toLowerCase()}`}
-                      >
-                        {booking.status}
-                      </span>
-
-                      {booking.status !==
-                        "Approved" && (
-                        <button
-                          onClick={() =>
-                            updateBooking(
-                              booking.id,
-                              "Approved"
-                            )
-                          }
-                        >
-                          <Check
-                            size={15}
-                          />
-                        </button>
-                      )}
-
-                      {booking.status !==
-                        "Rejected" && (
-                        <button
-                          onClick={() =>
-                            updateBooking(
-                              booking.id,
-                              "Rejected"
-                            )
-                          }
-                        >
-                          <X
-                            size={15}
-                          />
-                        </button>
-                      )}
-
-                    </div>
-
+            <div className="command-grid">
+              <section className="command-panel bookings-panel">
+                <div className="panel-heading">
+                  <div>
+                    <span>BOOKING QUEUE</span>
+                    <h3>Recent bookings</h3>
                   </div>
+                  <div className="panel-count">{bookings.length}</div>
+                </div>
 
-                )
-              )}
+                {bookings.length === 0 ? (
+                  <div className="empty-command">
+                    <span>NO BOOKINGS</span>
+                    <p>New booking requests will appear here.</p>
+                  </div>
+                ) : (
+                  <div className="booking-command-list">
+                    {bookings.map((booking) => (
+                      <div className="booking-command-card" key={booking.id}>
+                        <div className="booking-card-main">
+                          <div className="booking-card-time">
+                            <strong>{booking.start_time?.slice(0, 5) || "—"}</strong>
+                            <span>{booking.duration_hours || 1}h</span>
+                          </div>
 
-            </div>
+                          <div className="booking-card-info">
+                            <strong>{booking.name}</strong>
+                            <span>
+                              {formatDate(booking.date)} · {booking.players || 0} players
+                            </span>
+                            <small>{booking.phone}</small>
+                          </div>
+                        </div>
 
+                        <div className="booking-card-side">
+                          <div className="booking-price">
+                            ₹{Number(booking.total_price || 0).toLocaleString("en-IN")}
+                          </div>
 
-            <div className="admin-list">
+                          <span className={`command-status ${statusClass(booking.status)}`}>
+                            {booking.status}
+                          </span>
 
-              <h3>
-                Blocked slots
-              </h3>
+                          <div className="booking-actions">
+                            {booking.status !== "Approved" && (
+                              <button
+                                className="approve-button"
+                                onClick={() => updateBooking(booking.id, "Approved")}
+                                disabled={busy}
+                              >
+                                <Check size={14} /> APPROVE
+                              </button>
+                            )}
+                            {booking.status !== "Rejected" && (
+                              <button
+                                className="reject-button"
+                                onClick={() => updateBooking(booking.id, "Rejected")}
+                                disabled={busy}
+                              >
+                                REJECT
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
 
-              {blocked.map(
-                (item) => (
+              <section className="command-panel block-panel">
+                <div className="panel-heading">
+                  <div>
+                    <span>AVAILABILITY CONTROL</span>
+                    <h3>Block a slot</h3>
+                  </div>
+                  <div className="block-icon">×</div>
+                </div>
 
-                  <div
-                    className="admin-row"
-                    key={item.id}
-                  >
+                <p className="panel-description">
+                  Temporarily remove a time slot from public booking.
+                </p>
 
-                    <div>
+                <form className="command-block-form" onSubmit={blockSlot}>
+                  <label>
+                    DATE
+                    <input
+                      type="date"
+                      value={date}
+                      min={today}
+                      onChange={(e) => setDate(e.target.value)}
+                    />
+                  </label>
 
-                      <strong>
-                        {item.date}
-                      </strong>
-
-                      <span>
-                        {item.start_time?.slice(
-                          0,
-                          5
-                        )}
-                        {" — "}
-                        {item.end_time?.slice(
-                          0,
-                          5
-                        )}
-                      </span>
-
-                      <small>
-                        {item.reason}
-                      </small>
-
-                    </div>
-
-                    <button
-                      onClick={() =>
-                        unblock(
-                          item.id
-                        )
-                      }
+                  <label>
+                    START TIME
+                    <select
+                      value={startHour}
+                      onChange={(e) => {
+                        const next = Number(e.target.value);
+                        setStartHour(next);
+                        if (next >= 23) setBlockDuration(1);
+                      }}
                     >
-                      Unblock
-                    </button>
+                      {slots.map((h) => (
+                        <option key={h} value={h}>{hourLabel(h)}</option>
+                      ))}
+                    </select>
+                  </label>
 
-                  </div>
+                  <label>
+                    DURATION
+                    <select
+                      value={blockDuration}
+                      onChange={(e) => setBlockDuration(Number(e.target.value))}
+                    >
+                      <option value={1}>1 HOUR</option>
+                      {startHour < 23 && <option value={2}>2 HOURS</option>}
+                    </select>
+                  </label>
 
-                )
-              )}
+                  <label>
+                    REASON
+                    <input
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      placeholder="Maintenance, private event..."
+                    />
+                  </label>
 
+                  <button className="admin-primary-button block-submit" disabled={busy}>
+                    {busy ? "BLOCKING..." : "BLOCK SLOT"}
+                  </button>
+                </form>
+              </section>
             </div>
 
+            <section className="command-panel blocked-panel">
+              <div className="panel-heading">
+                <div>
+                  <span>AVAILABILITY CONTROL</span>
+                  <h3>Blocked slots</h3>
+                </div>
+                <div className="panel-count">{blocked.length}</div>
+              </div>
+
+              {blocked.length === 0 ? (
+                <div className="empty-command compact">
+                  <span>ALL CLEAR</span>
+                  <p>No manually blocked slots.</p>
+                </div>
+              ) : (
+                <div className="blocked-command-list">
+                  {blocked.map((item) => (
+                    <div className="blocked-command-card" key={item.id}>
+                      <div className="blocked-date">
+                        <strong>{formatDate(item.date)}</strong>
+                        <span>
+                          {item.start_time?.slice(0, 5)} — {item.end_time?.slice(0, 5)}
+                        </span>
+                      </div>
+
+                      <div className="blocked-reason">
+                        <span>REASON</span>
+                        <strong>{item.reason || "Blocked by admin"}</strong>
+                      </div>
+
+                      <button
+                        className="unblock-button"
+                        onClick={() => unblock(item.id)}
+                        disabled={busy}
+                      >
+                        UNBLOCK
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <div className="command-footer">
+              <span>RADHE BOX CRICKET</span>
+              <span>
+                {approvedCount} approved · {pendingCount} pending · {rejectedCount} rejected
+              </span>
+            </div>
           </div>
-
         )}
-
       </div>
-
     </div>
   );
 }
